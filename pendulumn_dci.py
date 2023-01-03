@@ -11,13 +11,12 @@ class Pendulum_dci:
         Guassian noise can be added in the dynamics. 
         Cost is -1 if the goal state has been reached, zero otherwise.
     '''
-    def __init__(self, joint = 1, nu=11, vMax=5, uMax=5, dt=0.2, ndt=1, noise_stddev=0.0):
-        self.pendulum = Pendulum(joint,noise_stddev)
+    def __init__(self, nu=11, vMax=5, uMax=5, dt=0.2, ndt=1, noise_stddev=0.0):
+        self.pendulum = Pendulum(1,noise_stddev)
         self.pendulum.DT  = dt    # Time step length
         self.pendulum.NDT = ndt   # Number of Euler steps per integration (internal)
         self.nu = nu              # Number of discretization steps for joint torque
                                   # the value above must be odd
-
         self.vMax = vMax          # Max velocity (v in [-vmax,vmax])
         self.uMax = uMax          # Max torque (u in [-umax,umax])
         self.dt = dt              # time step
@@ -30,7 +29,7 @@ class Pendulum_dci:
     
     # vertical position
     @property
-    def goal(self): return 0.
+    def goal(self): return [0.,0.]
     
     # Continuous to discrete c2d..
     # def c2dq(self, q):
@@ -80,17 +79,13 @@ class Pendulum_dci:
 
     # use the continuous time reset
     def reset(self,x=None):
-        # if x is None:
-        #     self.x = np.random.randint(0,self.nx)
-        # else: 
-        #     self.x = x
-        #return self.x
-        return self.pendulum.reset(x)
+        self.x = self.pendulum.reset(x)
+        return self.x
 
     def step(self,iu):
         ''' Simulate one time step '''
-        cost     = -1 if self.x==self.goal else 0
-        self.x   = self.dynamics(self.x,iu)
+        cost     = -1 if self.x[0]==self.goal[0] and self.x[1]==self.goal[1] else 0
+        self.x   = self.dynamics(iu)
         return self.x, cost
 
     def render(self):
@@ -100,9 +95,9 @@ class Pendulum_dci:
         #time.sleep(self.pendulum.DT)
 
     def dynamics(self,iu):
-        #x   = self.d2c(self.i2x(ix))
+        x   = self.x
         u   = self.d2cu(iu)
-        self.xc,_ = self.pendulum.dynamics(self.x,u)
+        self.xc,_ = self.pendulum.dynamics(x,u)
         return self.xc
     
     def plot_V_table(self, V):
