@@ -60,7 +60,6 @@ def get_action(exploration_prob, nu, Q, x, EGREEDY):
     else:
        action_values = Q.predict(x)
        best_action_index = tf.argmin(action_values)
-       print(action_values[best_action_index])
        u = tf2np(action_values[best_action_index])
     return u
 
@@ -88,7 +87,7 @@ def dqn_learning(env, gamma, Q, Q_target, nEpisodes, maxEpisodeLength, \
     replay_buffer = []
     capacity_buffer = 1000
     batch_size = 32
-    
+
     # Keep track of the cost-to-go history (for plot)
     h_ctg = []
     i_fin      = np.zeros(int(nEpisodes/nprint))
