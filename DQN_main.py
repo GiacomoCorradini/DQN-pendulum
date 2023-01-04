@@ -75,7 +75,7 @@ if __name__=='__main__':
     exploration_prob                = 1       # initial exploration probability of eps-greedy policy
     exploration_decreasing_decay    = 0.05    # exploration decay for exponential decreasing
     min_exploration_prob            = 0.001   # minimum of exploration probability
-    FLAG                            = False  # False = Load Model
+    FLAG                            = True  # False = Load Model
 
     nx = 2 
     nu = 1
@@ -98,7 +98,7 @@ if __name__=='__main__':
     ### --- Environment
     nd_u = 11                 # number of discretization steps for the joint torque u
     nd_x = 21
-    env  = Pendulum_dci(nd_x,nd_x,nd_u) # enviroment with continuous state and discrete control input
+    env  = Pendulum_dci(1,nd_x,nd_x,nd_u) # enviroment with continuous state and discrete control input
     
     if (FLAG == True):
         Q, h_ctg = dqn_learning(env, DISCOUNT, Q, Q_target, NEPISODES, MAX_EPISODE_LENGTH, LEARNING_RATE, critic_optimizer, exploration_prob, exploration_decreasing_decay, min_exploration_prob, compute_V_pi_from_Q, PLOT, NPRINT)
