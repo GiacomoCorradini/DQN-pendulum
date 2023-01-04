@@ -4,6 +4,7 @@ from tensorflow.python.ops.numpy_ops import np_config
 import numpy as np
 from numpy.random import randint, uniform
 import matplotlib as plt
+from pendulumn_dci import Pendulum_dci
 
 np_config.enable_numpy_behavior()
 
@@ -48,7 +49,7 @@ class DQNagent:
 
         return model
 
-    def get_action(self, exploration_prob, env, x, EGREEDY):
+    def get_action(self, exploration_prob, env, x, Q, EGREEDY):
         """
             epsilon-greedy policy
         """
@@ -57,8 +58,10 @@ class DQNagent:
             u = randint(0, env.nu)
         # otherwise take a greedy control
         else:
-            action_values = self.Q.predict(x)
+            action_values = Q.predict(x)
+            print(action_values)
             best_action_index = tf.argmin(action_values)
+            print(best_action_index)
             print(action_values[best_action_index])
             u = self.tf2np(action_values[best_action_index])
         return u
@@ -104,7 +107,22 @@ class DQNagent:
         return tf.squeeze(y).numpy()
 
 if __name__=="__main__":
+
     agent = DQNagent(2,1)
+    env = Pendulum_dci(1)
+
+    env.reset()
+
+    print("x")
+    print(env.x)
+    u = agent.get_action(1, env, env.x, agent.Q, False)
+    
+    x_next, cost = env.step(u)
+
+    print("x_next")
+    print(x_next)
+    u_next = agent.get_action(1, env, x_next, agent.Q, False)
+
     agent.Q.summary()
     agent.Q_target.summary()
 

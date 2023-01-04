@@ -118,7 +118,7 @@ def dqn_learning(buffer, agent, env,\
             # store the experience (s,a,r,s',a') in the replay_buffer
             buffer.store_experience(x, u, cost, x_next, u_next)
             
-            if len(buffer.replay_buffer) > 100:
+            if buffer.get_length() > 100:
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
                 x_batch, u_batch, cost_batch, x_next_batch, u_next_batch = buffer.sample_batch()
 

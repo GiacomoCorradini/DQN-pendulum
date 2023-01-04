@@ -36,6 +36,9 @@ class ReplayBuffer:
 
         return x_batch, u_batch, cost_batch, x_next_batch, u_next_batch
 
+    def get_length(self):
+        return len(buffer.replay_buffer)
+
 if __name__=="__main__":
     buffer = ReplayBuffer()
     buffer.store_experience([1,1],2,3,4,5)
@@ -43,5 +46,5 @@ if __name__=="__main__":
     # buffer.store_experience([111,],222,333,444,555)
     # buffer.store_experience([1111,],2222,3333,4444,5555)
     # buffer.store_experience([11111,],22222,33333,44444,55555)
-    print(len(buffer.replay_buffer))
+    print(buffer.get_length())
     buffer.sample_batch()
