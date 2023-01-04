@@ -25,13 +25,27 @@ def render_greedy_policy(env, Q, gamma, x0=None, maxiter=20):
         env.render()
     print("Real cost to go of state", x0, ":", costToGo)
 
-def compute_V_pi_from_Q(env, Q):
+
+def compute_V_pi_from_Q(Q, vMax=5, xstep=20, nx=2):
     ''' Compute Value table and greedy policy pi from Q table. '''
-    action_values = Q.predict(env.x)
-    best_action_index = tf.argmin(action_values)
-    pi = tf2np(action_values[best_action_index])
+
+    x = np.empty(shape = (nx,xstep+1))
+    DQ = 2*np.pi/xstep
+    DV = 2*vMax/xstep
+    x[0,:] = np.arange(-np.pi,np.pi+DQ, DQ)
+    x[1,:] = np.arange(-vMax, vMax+DV, DV)
+    pi = np.empty(shape = (xstep+1,xstep+1))
+    V = np.empty(shape = (xstep+1,xstep+1))
+
+    for i in range(np.shape(x)[1]):
+        for j in range(np.shape(x)[1]):
+            action_values = Q.predict([[x[0,i]],[x[1,j]]])
+            best_action_index = tf.argmin(action_values)
+            pi[i,j] = tf2np(action_values[best_action_index])
+            V[i,j]  = tf2np(tf.keras.backend.min(action_values))
+
+    return V, pi, x
     
-    V = tf2np(tf.keras.backend.min(Q))
     # pi[x] = np.argmin(Q[x,:])
         # Rather than simply using argmin we do something slightly more complex
         # to ensure simmetry of the policy when multiply control inputs
@@ -44,8 +58,6 @@ def compute_V_pi_from_Q(env, Q):
     #     pi = u_best[0]
     # else:
     #     pi = u_best[int(u_best.shape[0]/2)]
-
-    return V, pi
 
 if __name__=='__main__':
     ### --- Random seed
@@ -61,9 +73,9 @@ if __name__=='__main__':
     DISCOUNT                        = 0.99    # Discount factor 
     PLOT                            = True    # Plot stuff if True
     exploration_prob                = 1       # initial exploration probability of eps-greedy policy
-    exploration_decreasing_decay    = 0.001   # exploration decay for exponential decreasing
+    exploration_decreasing_decay    = 0.05    # exploration decay for exponential decreasing
     min_exploration_prob            = 0.001   # minimum of exploration probability
-    FLAG                            = True    # False = Load Model
+    FLAG                            = False  # False = Load Model
 
     nx = 2 
     nu = 1
@@ -84,11 +96,12 @@ if __name__=='__main__':
     print(critic_optimizer)
 
     ### --- Environment
-    nu=11   # number of discretization steps for the joint torque u
-    env = Pendulum_dci(nu) # enviroment with continuous state and discrete control input
+    nd_u = 11                 # number of discretization steps for the joint torque u
+    nd_x = 21
+    env  = Pendulum_dci(nd_x,nd_x,nd_u) # enviroment with continuous state and discrete control input
     
-    if FLAG == True:
-        Q, h_ctg = dqn_learning(env, DISCOUNT, Q, Q_target, NEPISODES, MAX_EPISODE_LENGTH, LEARNING_RATE, exploration_prob, exploration_decreasing_decay, min_exploration_prob, compute_V_pi_from_Q, PLOT, NPRINT)
+    if (FLAG == True):
+        Q, h_ctg = dqn_learning(env, DISCOUNT, Q, Q_target, NEPISODES, MAX_EPISODE_LENGTH, LEARNING_RATE, critic_optimizer, exploration_prob, exploration_decreasing_decay, min_exploration_prob, compute_V_pi_from_Q, PLOT, NPRINT)
         
         print("\nTraining finished")
         Q.save('saved_model/my_model')
@@ -103,10 +116,11 @@ if __name__=='__main__':
 
     if FLAG == False:
         Q = tf.keras.models.load_model('saved_model/my_model')
-
-    V, pi = compute_V_pi_from_Q(env,Q)
-    env.plot_V_table(V)
-    env.plot_policy(pi)
+        assert(Q)
+   
+    V, pi, xgrid = compute_V_pi_from_Q(Q)
+    env.plot_V_table(V, xgrid)
+    env.plot_policy(pi, xgrid)
     print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
     
     # print("Compute real Value function of greedy policy")
@@ -116,7 +130,9 @@ if __name__=='__main__':
     # env.plot_V_table(V_pi)
     # print("Average/min/max Value:", np.mean(V_pi), np.min(V_pi), np.max(V_pi)) 
         
-    # render_greedy_policy(env, Q, DISCOUNT)
-    # plt.plot( np.cumsum(h_ctg)/range(1,NEPISODES+1) )
-    # plt.title ("Average cost-to-go")
-    # plt.show()
+    render_greedy_policy(env, Q, DISCOUNT)
+    plt.figure()
+    #plt.plot( np.cumsum(h_ctg)/range(1,NEPISODES+1) )
+    plt.title ("Average cost-to-go")
+
+    plt.show()
