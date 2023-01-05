@@ -11,7 +11,7 @@ class Pendulum_dci:
         Guassian noise can be added in the dynamics. 
         Cost is -1 if the goal state has been reached, zero otherwise.
     '''
-    def __init__(self, n_joint, nq=21, nv=21, nu=11, vMax=5, uMax=5, dt=0.2, ndt=1, noise_stddev=0):
+    def __init__(self, n_joint = 1, nq=21, nv=21, nu=11, vMax=5, uMax=5, dt=0.2, ndt=1, noise_stddev=0):
         self.pendulum = Pendulum(n_joint,noise_stddev)
         self.pendulum.DT  = dt    # Time step length
         self.pendulum.NDT = ndt   # Number of Euler steps per integration (internal)
@@ -102,8 +102,8 @@ class Pendulum_dci:
     def dynamics(self,iu):
         x   = self.x
         u   = self.d2cu(iu)
-        self.xc,_ = self.pendulum.dynamics(x,u)
-        return self.xclip(self.xc)
+        self.x,_ = self.pendulum.dynamics(x,u)
+        return self.xclip(self.x)
     
     def plot_V_table(self, V, x, i=0):
         ''' Plot the given Value table V '''
@@ -127,3 +127,32 @@ class Pendulum_dci:
         plt.ylabel("dq")
         plt.show(block=False)
         
+from dpendulum import DPendulum
+    
+if __name__=="__main__":
+
+    ### --- Random seed
+    RANDOM_SEED = int((time.time()%10)*1000)
+    print("Seed = %d" % RANDOM_SEED)
+    np.random.seed(RANDOM_SEED)
+
+    env = Pendulum(2)
+    env.reset()
+    x,c = env.step([1])
+    print(env.nx)
+
+    # print(env.c2du(0.0))
+
+    # print(pi)
+
+    # x0 = x = env.reset()
+    # u = 1
+    # for i in range(100):
+    #     u += 0.1
+    #     x,c = env.step([u])
+    #     #print(u)
+    #     print(u)
+    #     print(env.d2cu(u))
+    #     print(env.c2du(u))
+    #     #print(x)
+    #     #env.render()

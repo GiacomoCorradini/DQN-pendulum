@@ -59,10 +59,7 @@ class DQNagent:
         # otherwise take a greedy control
         else:
             action_values = self.Q.predict(x)
-            print(action_values)
             best_action_index = tf.argmin(action_values)
-            print(best_action_index)
-            print(action_values[best_action_index])
             u = self.tf2np(action_values[best_action_index])
         return u
 
