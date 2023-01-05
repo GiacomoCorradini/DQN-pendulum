@@ -109,8 +109,6 @@ class Pendulum:
     ''' Size of the x vector '''
     @property
     def nx(self): return self.nq+self.nv
-#    @property
-#    def nobs(self): return self.nx+self.withSinCos
     ''' Size of the u vector '''
     @property
     def nu(self): return self.nv
@@ -134,10 +132,7 @@ class Pendulum:
 
     def obs(self, x):
         ''' Compute the observation of the state '''
-        if self.withSinCos:
-            return np.vstack([ np.vstack([np.cos(qi),np.sin(qi)]) for qi in x[:self.nq] ] 
-                             + [x[self.nq:]],)
-        else: return x.copy()
+        return x.copy()
 
     def tip(self, q):
         '''Return the altitude of pendulum tip'''
