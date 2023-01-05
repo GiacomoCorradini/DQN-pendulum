@@ -132,7 +132,7 @@ def dqn_learning(env, gamma, Q, Q_target, nEpisodes, maxEpisodeLength, \
             del replay_buffer[:-capacity_buffer]
             
             # do the algorithm only if we have already collected more than 100 episodes
-            if len(replay_buffer) > 100:  
+            if len(replay_buffer) > 100 and k % c_step == 0:  
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
                 batch = rand.choices(replay_buffer, k=batch_size)
                 x_batch, u_batch, cost_batch, x_next_batch, u_next_batch = list(zip(*batch))
@@ -152,11 +152,11 @@ def dqn_learning(env, gamma, Q, Q_target, nEpisodes, maxEpisodeLength, \
                 xu_next_batch = np2tf(xu_next_batch)
 
                 # optimizer with SGD
-                update(xu_batch, cost_batch, xu_next_batch, Q, Q_target, gamma, critic_optimizer)
                
+                update(xu_batch, cost_batch, xu_next_batch, Q, Q_target, gamma, critic_optimizer)
+                Q_target.set_weights(Q.get_weights())
                 # Periodically update weights (period = c_step)
-                if k % c_step == 0:
-                    Q_target.set_weights(Q.get_weights())
+                #if k % c_step == 0:
                 
             # keep track of the cost to go
             J += gamma_to_the_i * cost

@@ -49,7 +49,7 @@ class DQNagent:
 
         return model
 
-    def get_action(self, exploration_prob, env, x, Q, EGREEDY):
+    def get_action(self, exploration_prob, env, x, EGREEDY):
         """
             epsilon-greedy policy
         """
@@ -58,7 +58,7 @@ class DQNagent:
             u = randint(0, env.nu)
         # otherwise take a greedy control
         else:
-            action_values = Q.predict(x)
+            action_values = self.Q.predict(x)
             print(action_values)
             best_action_index = tf.argmin(action_values)
             print(best_action_index)
@@ -93,14 +93,14 @@ class DQNagent:
         """
         self.Q_target.set_weights(self.Q.get_weights())
 
-    def np2tf(y):
+    def np2tf(self, y):
         """
             convert from numpy to tensorflow
         """
         out = tf.expand_dims(tf.convert_to_tensor(y), 0).T
         return out
         
-    def tf2np(y):
+    def tf2np(self, y):
         """ 
             convert from tensorflow to numpy 
         """
@@ -115,15 +115,13 @@ if __name__=="__main__":
 
     print("x")
     print(env.x)
-    u = agent.get_action(1, env, env.x, agent.Q, False)
+    u = agent.get_action(1, env, env.x, False)
     
     x_next, cost = env.step(u)
 
     print("x_next")
     print(x_next)
-    u_next = agent.get_action(1, env, x_next, agent.Q, False)
+    u_next = agent.get_action(1, env, x_next, False)
 
     agent.Q.summary()
     agent.Q_target.summary()
-
-    agent.get_action(1,1,[[1.2],[2.5]],False)

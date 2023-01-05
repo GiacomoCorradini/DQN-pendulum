@@ -37,7 +37,7 @@ class ReplayBuffer:
         return x_batch, u_batch, cost_batch, x_next_batch, u_next_batch
 
     def get_length(self):
-        return len(buffer.replay_buffer)
+        return len(self.replay_buffer)
 
 if __name__=="__main__":
     buffer = ReplayBuffer()
