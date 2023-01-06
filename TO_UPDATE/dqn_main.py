@@ -223,8 +223,8 @@ if __name__=="__main__":
         plt.title ("Average cost-to-go")
 
     if PLOT_TRAJ:
-        X_sim, U_sim
-        time_vec = np.linspace(0.0,NEPISODSE*env.DT,NEPISODSE+1)
+        X_sim, U_sim = solver.start_simu(x0, X, U, KK, conf.dt_sim, conf.PUSH, conf.TORQUE_LIMITS)
+        time_vec = np.linspace(0.0,NEPISODES*conf.dt,NEPISODES+1)
         plt.figure()
         plt.plot(time_vec[:-1], U_sim[:,0], "b")
         if env.uMax:
