@@ -174,6 +174,7 @@ if __name__=="__main__":
     QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
     DISCOUNT                     = 0.99      # Discount factor 
     PLOT                         = True      # Plot stuff if True
+    PLOT_TRAJ                    = False     # Plot trajectory if True
     EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
     EXPLORATION_DECREASING_DECAY = 0.05      # exploration decay for exponential decreasing
     MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration proba
@@ -196,7 +197,7 @@ if __name__=="__main__":
     buffer = ReplayBuffer(CAPACITY_BUFFER, BATCH_SIZE)
     env = Pendulum_dci(njoint, nd_x, nd_x, nd_u)
 
-    if (FLAG == True):
+    if FLAG:
         agent.Q, h_ctg = dqn_learning(buffer, agent, env, DISCOUNT, NEPISODES, MAX_EPISODE_LENGTH, MIN_BUFFER, EXPLORATION_PROB, EXPLORATION_DECREASING_DECAY, MIN_EXPLORATION_PROB, compute_V_pi_from_Q, PLOT, NPRINT)
         
         # save model and weights
@@ -216,9 +217,37 @@ if __name__=="__main__":
         print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
         
     render_greedy_policy(env, agent)
-    if (FLAG == True):
+    if FLAG:
         plt.figure()
         plt.plot( np.cumsum(h_ctg)/range(1,NEPISODES+1) )
         plt.title ("Average cost-to-go")
+
+    if PLOT_TRAJ:
+        X_sim, U_sim
+        time_vec = np.linspace(0.0,NEPISODSE*env.DT,NEPISODSE+1)
+        plt.figure()
+        plt.plot(time_vec[:-1], U_sim[:,0], "b")
+        if env.uMax:
+            plt.plot(time_vec[:-1], env.uMax*np.ones(len(time_vec[:-1])), "k--", alpha=0.8, linewidth=1.5)
+            plt.plot(time_vec[:-1], -env.uMax*np.ones(len(time_vec[:-1])), "k--", alpha=0.8, linewidth=1.5)
+        plt.gca().set_xlabel('Time [s]')
+        plt.gca().set_ylabel('[Nm]')
+        leg = plt.legend(["1st joint torque", "1st joint ref. torque","2nd joint torque", "2nd joint ref. torque"],loc='upper right')
+    
+        plt.figure()
+        plt.plot(time_vec, X_sim[:,0],'b')
+        if env.n_joint == 1:
+            plt.plot(time_vec, X_sim[:,1],'r')
+            plt.legend(["1st joint position","2nd joint position"],loc='upper right')
+        plt.gca().set_xlabel('Time [s]')
+        plt.gca().set_ylabel('[rad]')
+        
+        plt.figure()
+        plt.plot(time_vec, X_sim[:,2],'b')
+        if env.n_joint == 1:
+            plt.plot(time_vec, X_sim[:,3],'r')
+            plt.legend(["1st joint velocity","2nd joint velocity"],loc='upper right')
+        plt.gca().set_xlabel('Time [s]')
+        plt.gca().set_ylabel('[rad/s]')
 
     plt.show()
