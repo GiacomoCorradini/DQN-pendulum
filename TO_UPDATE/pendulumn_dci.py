@@ -141,9 +141,9 @@ if __name__=="__main__":
     env = Pendulum_dci()   
 
     x0 = x = env.reset(np.asarray([[0.],[0.]]))
-    u = env.c2du(0)
-    print(u)
-    print(env.d2cu(u))
+    u = 0 #env.c2du(0)
+    #print(u)
+    #print(env.d2cu(u))
     cost = []
     for i in range(100):
         u += 0.0

@@ -61,7 +61,8 @@ class DQNagent:
             action_values = self.Q.predict(x)
             best_action_index = tf.argmin(action_values)
             u = self.tf2np(action_values[best_action_index])
-        return env.c2du(u)
+            env.c2du(u)
+        return u
 
     def update(self, xu_batch, cost_batch, xu_next_batch):
         """ 

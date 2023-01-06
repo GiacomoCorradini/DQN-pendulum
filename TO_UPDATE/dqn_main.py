@@ -12,20 +12,24 @@ from replay_buffer import ReplayBuffer
 from tensorflow.python.ops.numpy_ops import np_config
 np_config.enable_numpy_behavior()
 
-def render_greedy_policy(env, agent, x0=None, maxiter=20):
+def render_greedy_policy(env, agent, x0=None, maxiter=100):
     '''Roll-out from random state using greedy policy.'''
     x0 = x = env.reset(x0)
     costToGo = 0.0
     gamma_i = 1
+    X_sim = np.zeros([maxiter,env.pendulum.nx])   # store 
+    U_sim = np.zeros(maxiter)          # store 
     for i in range(maxiter):
         action_values = agent.Q.predict(x)
         best_action_index = tf.argmin(action_values)
-        u = agent.tf2np(action_values[best_action_index])
-        x,c = env.step([u])
+        U_sim[i] = agent.tf2np(action_values[best_action_index])
+        x,c = env.step([U_sim[i]])
         costToGo += gamma_i*c
         gamma_i *= agent.DISCOUNT
         env.render()
+        X_sim[i,:] = np.concatenate(x)
     print("Real cost to go of state", x0, ":", costToGo)
+    return X_sim, U_sim
 
 def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
     ''' Compute Value table and greedy policy pi from Q table. '''
@@ -114,7 +118,7 @@ def dqn_learning(buffer, agent, env,\
             # store the experience (s,a,r,s',a') in the replay_buffer
             buffer.store_experience(x, u, cost, x_next, u_next)
             
-            if buffer.get_length() > min_buffer:
+            if buffer.get_length() > min_buffer and k % c_step == 0:
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
                 x_batch, u_batch, cost_batch, x_next_batch, u_next_batch = buffer.sample_batch()
 
@@ -131,8 +135,7 @@ def dqn_learning(buffer, agent, env,\
                 agent.update(xu_batch, cost_batch, xu_next_batch)
                 
                 # Periodically update target network (period = c_step)
-                if k % c_step == 0:
-                    agent.update_Q_target()
+                agent.update_Q_target()
         
             # keep track of the cost to go
             J += gamma_to_the_i * cost
@@ -151,7 +154,7 @@ def dqn_learning(buffer, agent, env,\
             i_fin[iaux]   = i
             J_fin[iaux]   = J
             eps_fin[iaux] = exploration_prob
-            if(plot and env.n_joint == 1):
+            if(plot and env.njoint == 1):
                 V, pi, xgrid = compute_V_pi_from_Q(agent)
                 env.plot_V_table(V, xgrid, iaux)
                 env.plot_policy(pi, xgrid, iaux)
@@ -174,7 +177,7 @@ if __name__=="__main__":
     QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
     DISCOUNT                     = 0.99      # Discount factor 
     PLOT                         = True      # Plot stuff if True
-    PLOT_TRAJ                    = False     # Plot trajectory if True
+    PLOT_TRAJ                    = True     # Plot trajectory if True
     EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
     EXPLORATION_DECREASING_DECAY = 0.05      # exploration decay for exponential decreasing
     MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration proba
@@ -189,15 +192,23 @@ if __name__=="__main__":
     nd_u                         = 11        # number of discretization steps for the joint torque u
     nd_x                         = 21        # number of discretization steps for the joint state (for plot)
     # ----- FLAG to TRAIN/LOAD
-    FLAG                         = False # False = Load Model
+    FLAG                         = True # False = Load Model
 
+    print("ciao")
 
     ### --- Initialize agent, buffer and enviroment
-    agent = DQNagent(nx, nu, DISCOUNT, QVALUE_LEARNING_RATE)
-    buffer = ReplayBuffer(CAPACITY_BUFFER, BATCH_SIZE)
     env = Pendulum_dci(njoint, nd_x, nd_x, nd_u)
+    print("ciao")
 
-    if FLAG:
+    agent = DQNagent(nx, nu, DISCOUNT, QVALUE_LEARNING_RATE)
+    print("ciao")
+
+    buffer = ReplayBuffer(CAPACITY_BUFFER, BATCH_SIZE)
+    print("ciao")
+
+    if FLAG == True:
+        print("ciao")
+
         agent.Q, h_ctg = dqn_learning(buffer, agent, env, DISCOUNT, NEPISODES, MAX_EPISODE_LENGTH, MIN_BUFFER, EXPLORATION_PROB, EXPLORATION_DECREASING_DECAY, MIN_EXPLORATION_PROB, compute_V_pi_from_Q, PLOT, NPRINT)
         
         # save model and weights
@@ -216,38 +227,42 @@ if __name__=="__main__":
         env.plot_policy(pi, xgrid)
         print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
         
-    render_greedy_policy(env, agent)
+    X_sim, U_sim = render_greedy_policy(env, agent)
     if FLAG:
         plt.figure()
-        plt.plot( np.cumsum(h_ctg)/range(1,NEPISODES+1) )
+        plt.plot( np.cumsum(h_ctg)/range(1,MAX_EPISODE_LENGTH+1) )
         plt.title ("Average cost-to-go")
 
     if PLOT_TRAJ:
-        X_sim, U_sim = solver.start_simu(x0, X, U, KK, conf.dt_sim, conf.PUSH, conf.TORQUE_LIMITS)
-        time_vec = np.linspace(0.0,NEPISODES*conf.dt,NEPISODES+1)
+        time_vec = np.linspace(0.0,MAX_EPISODE_LENGTH*env.pendulum.DT,MAX_EPISODE_LENGTH)
         plt.figure()
-        plt.plot(time_vec[:-1], U_sim[:,0], "b")
+        plt.plot(time_vec, U_sim[:], "b")
         if env.uMax:
-            plt.plot(time_vec[:-1], env.uMax*np.ones(len(time_vec[:-1])), "k--", alpha=0.8, linewidth=1.5)
-            plt.plot(time_vec[:-1], -env.uMax*np.ones(len(time_vec[:-1])), "k--", alpha=0.8, linewidth=1.5)
+            plt.plot(time_vec, env.uMax*np.ones(len(time_vec)), "k--", alpha=0.8, linewidth=1.5)
+            plt.plot(time_vec, -env.uMax*np.ones(len(time_vec)), "k--", alpha=0.8, linewidth=1.5)
         plt.gca().set_xlabel('Time [s]')
         plt.gca().set_ylabel('[Nm]')
-        leg = plt.legend(["1st joint torque", "1st joint ref. torque","2nd joint torque", "2nd joint ref. torque"],loc='upper right')
+        plt.title ("Torque input")
+        # leg = plt.legend(["1st joint torque", "1st joint ref. torque","2nd joint torque", "2nd joint ref. torque"],loc='upper right')
     
         plt.figure()
         plt.plot(time_vec, X_sim[:,0],'b')
-        if env.n_joint == 1:
+        if env.njoint == 2:
             plt.plot(time_vec, X_sim[:,1],'r')
             plt.legend(["1st joint position","2nd joint position"],loc='upper right')
         plt.gca().set_xlabel('Time [s]')
         plt.gca().set_ylabel('[rad]')
+        plt.title ("Joint position")
         
         plt.figure()
-        plt.plot(time_vec, X_sim[:,2],'b')
-        if env.n_joint == 1:
+        if env.njoint == 1:
+            plt.plot(time_vec, X_sim[:,1],'b')
+        else:
+            plt.plot(time_vec, X_sim[:,2],'b')
             plt.plot(time_vec, X_sim[:,3],'r')
             plt.legend(["1st joint velocity","2nd joint velocity"],loc='upper right')
         plt.gca().set_xlabel('Time [s]')
         plt.gca().set_ylabel('[rad/s]')
+        plt.title ("Joint velocity")
 
     plt.show()

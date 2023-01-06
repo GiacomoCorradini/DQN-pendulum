@@ -200,7 +200,7 @@ if __name__=="__main__":
         x,c = env.step([u])
         cost.append(c)
         env.render()
-        print(c)
+        #print(c)
     
     plt.plot( np.cumsum(cost)/range(1,100+1) )
     plt.show()
