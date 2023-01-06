@@ -16,6 +16,7 @@ import pinocchio as pin
 from display import Display
 from numpy.linalg import inv
 import time
+import matplotlib.pyplot as plt
 
 class Visual:
     '''
@@ -109,8 +110,6 @@ class Pendulum:
     ''' Size of the x vector '''
     @property
     def nx(self): return self.nq+self.nv
-#    @property
-#    def nobs(self): return self.nx+self.withSinCos
     ''' Size of the u vector '''
     @property
     def nu(self): return self.nv
@@ -134,10 +133,7 @@ class Pendulum:
 
     def obs(self, x):
         ''' Compute the observation of the state '''
-        if self.withSinCos:
-            return np.vstack([ np.vstack([np.cos(qi),np.sin(qi)]) for qi in x[:self.nq] ] 
-                             + [x[self.nq:]],)
-        else: return x.copy()
+        return x.copy()
 
     def tip(self, q):
         '''Return the altitude of pendulum tip'''
@@ -180,10 +176,31 @@ class Pendulum:
         x[:self.nq] = modulePi(q)
         x[self.nq:] = np.clip(v,-self.vmax,self.vmax)
         
-        return x,-cost
+        return x,cost
      
     def render(self):
         q = self.x[:self.nq]
         self.display(q)
         time.sleep(self.DT)
  
+if __name__=="__main__":
+
+    ### --- Random seed
+    RANDOM_SEED = int((time.time()%10)*1000)
+    print("Seed = %d" % RANDOM_SEED)
+    np.random.seed(RANDOM_SEED)
+
+    env = Pendulum()   
+
+    x0 = x = env.reset(np.asarray([[0.],[0.]]))
+    u = 0
+    cost = []
+    for i in range(100):
+        u += 0.01
+        x,c = env.step([u])
+        cost.append(c)
+        env.render()
+        #print(c)
+    
+    plt.plot( np.cumsum(cost)/range(1,100+1) )
+    plt.show()

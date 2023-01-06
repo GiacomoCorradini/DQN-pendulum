@@ -2,6 +2,7 @@ from pendulum import Pendulum
 import numpy as np
 from numpy import pi
 import time
+import matplotlib.pyplot as plt
     
 
 class Pendulum_dci:
@@ -11,8 +12,9 @@ class Pendulum_dci:
         Guassian noise can be added in the dynamics. 
         Cost is -1 if the goal state has been reached, zero otherwise.
     '''
-    def __init__(self, n_joint, nq=21, nv=21, nu=11, vMax=5, uMax=5, dt=0.2, ndt=1, noise_stddev=0):
-        self.pendulum = Pendulum(n_joint, noise_stddev)
+    def __init__(self, n_joint = 1, nq=21, nv=21, nu=11, vMax=5, uMax=5, dt=5e-2, ndt=1, noise_stddev=0):
+        self.njoint = n_joint
+        self.pendulum = Pendulum(n_joint,noise_stddev)
         self.pendulum.DT  = dt    # Time step length
         self.pendulum.NDT = ndt   # Number of Euler steps per integration (internal)
         self.nq = nq        # Number of discretization steps for joint angle
@@ -90,20 +92,22 @@ class Pendulum_dci:
 
     def step(self,iu):
         ''' Simulate one time step '''
-        cost     = -1 if self.goal(self.x) else 0
-        self.x   = self.dynamics(iu)
+        #cost     = -1 if self.goal(self.x) else 0
+        #self.x   = self.dynamics(iu)
+        u   = self.d2cu(iu)
+        self.x, cost = self.pendulum.step(u)
         return self.x, cost
 
     def render(self):
         self.pendulum.render()
         self.pendulum.display(np.array([self.x[0],]))
         time.sleep(self.pendulum.DT)
-
+ 
     def dynamics(self,iu):
-        x   = self.x
-        u   = self.d2cu(iu)
-        self.xc,_ = self.pendulum.dynamics(x,u)
-        return self.xclip(self.xc)
+        #x   = self.x
+        #u   = self.d2cu(iu)
+        self.xc,_ = self.pendulum.dynamics(self.x,iu)
+        return self.xc# self.xclip(self.x)
     
     def plot_V_table(self, V, x, i=0):
         ''' Plot the given Value table V '''
@@ -126,4 +130,27 @@ class Pendulum_dci:
         plt.xlabel("q")
         plt.ylabel("dq")
         plt.show(block=False)
-        
+            
+if __name__=="__main__":
+
+    ### --- Random seed
+    RANDOM_SEED = int((time.time()%10)*1000)
+    print("Seed = %d" % RANDOM_SEED)
+    np.random.seed(RANDOM_SEED)
+
+    env = Pendulum_dci()   
+
+    x0 = x = env.reset(np.asarray([[0.],[0.]]))
+    u = 0 #env.c2du(0)
+    #print(u)
+    #print(env.d2cu(u))
+    cost = []
+    for i in range(100):
+        u += 0.0
+        x,c = env.step([u])
+        cost.append(c)
+        env.render()
+        #print(c)
+    
+    plt.plot( np.cumsum(cost)/range(1,100+1) )
+    plt.show()
