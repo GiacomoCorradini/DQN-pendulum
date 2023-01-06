@@ -61,7 +61,7 @@ def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
     #     pi = u_best[int(u_best.shape[0]/2)]
 
 def dqn_learning(buffer, agent, env,\
-                 gamma, nEpisodes, maxEpisodeLength, min_buffer,\
+                 gamma, nEpisodes, maxEpisodeLength, min_buffer, c_step\
                  exploration_prob, exploration_decreasing_decay, min_exploration_prob, \
                  compute_V_pi_from_Q, plot=False, nprint=1000):
     ''' 
@@ -86,9 +86,6 @@ def dqn_learning(buffer, agent, env,\
     eps_fin    = np.zeros(int(nEpisodes/nprint))
     # Make a copy of the initial Q table guess
     Q = tf.keras.models.clone_model(agent.Q)
-
-    # n° of step to update the target NN
-    c_step = 4
 
     # count the n° of episodes
     ep = 0
@@ -183,6 +180,7 @@ if __name__=="__main__":
     CAPACITY_BUFFER              = 1000  # capacity buffer
     BATCH_SIZE                   = 32    # batch size 
     MIN_BUFFER                   = 100   # Start sampling from buffer when have length > MIN_BUFFER
+    C_STEP                       = 4     # Every c step update w  
     # ----- Control/State
     nx                           = 2     # number of states
     nu                           = 1     # number of control input
