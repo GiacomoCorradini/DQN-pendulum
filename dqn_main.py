@@ -12,7 +12,7 @@ from replay_buffer import ReplayBuffer
 from tensorflow.python.ops.numpy_ops import np_config
 np_config.enable_numpy_behavior()
 
-def render_greedy_policy(env, agent, x0=None, maxiter=100):
+def render_greedy_policy(env, agent, exploration_prob, x0=None, maxiter=100):
     '''Roll-out from random state using greedy policy.'''
     x0 = x = env.reset(x0)
     costToGo = 0.0
@@ -20,14 +20,13 @@ def render_greedy_policy(env, agent, x0=None, maxiter=100):
     X_sim    = np.zeros([maxiter,env.pendulum.nx])   # store x
     U_sim    = np.zeros(maxiter)                     # store u
     for i in range(maxiter):
-        action_values     = agent.Q.predict(x)
-        best_action_index = tf.argmin(action_values)
-        U_sim[i] = agent.tf2np(action_values[best_action_index])
-        x,c      = env.step([U_sim[i]])
+        u = agent.get_action(exploration_prob, env, x, False)
+        x,c      = env.step([u])
         costToGo += gamma_i*c
         gamma_i  *= agent.DISCOUNT
         env.render()
         X_sim[i,:] = np.concatenate(x)
+        U_sim[i] = u
     print("Real cost to go of state", x0, ":", costToGo)
     return X_sim, U_sim
 
@@ -227,7 +226,7 @@ if __name__=="__main__":
         env.plot_policy(pi, xgrid)
         print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
         
-    X_sim, U_sim = render_greedy_policy(env, agent)
+    X_sim, U_sim = render_greedy_policy(env, agent, EXPLORATION_PROB)
 
     if PLOT_TRAJ:
         time_vec = np.linspace(0.0,MAX_EPISODE_LENGTH*env.pendulum.DT,MAX_EPISODE_LENGTH)
