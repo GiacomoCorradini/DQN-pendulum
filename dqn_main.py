@@ -192,7 +192,7 @@ if __name__=="__main__":
     nd_u                         = 11        # number of discretization steps for the joint torque u
     nd_x                         = 21        # number of discretization steps for the joint state (for plot)
     # ----- FLAG to TRAIN/LOAD
-    FLAG                         = True # False = Load Model
+    FLAG                         = False # False = Load Model
 
     ### --- Initialize agent, buffer and enviroment
     env = Pendulum_dci(njoint, nd_u)
