@@ -21,7 +21,6 @@ def render_greedy_policy(env, agent, x0=None, maxiter=20):
         action_values = agent.Q.predict(x)
         best_action_index = tf.argmin(action_values)
         u = agent.tf2np(action_values[best_action_index])
-#        print("State", x, "Control", u, "Q", Q[x,u])
         x,c = env.step([u])
         costToGo += gamma_i*c
         gamma_i *= agent.DISCOUNT
@@ -62,7 +61,7 @@ def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
     #     pi = u_best[int(u_best.shape[0]/2)]
 
 def dqn_learning(buffer, agent, env,\
-                 gamma, nEpisodes, maxEpisodeLength, \
+                 gamma, nEpisodes, maxEpisodeLength, min_buffer,\
                  exploration_prob, exploration_decreasing_decay, min_exploration_prob, \
                  compute_V_pi_from_Q, plot=False, nprint=1000):
     ''' 
@@ -118,7 +117,7 @@ def dqn_learning(buffer, agent, env,\
             # store the experience (s,a,r,s',a') in the replay_buffer
             buffer.store_experience(x, u, cost, x_next, u_next)
             
-            if buffer.get_length() > 100:
+            if buffer.get_length() > min_buffer:
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
                 x_batch, u_batch, cost_batch, x_next_batch, u_next_batch = buffer.sample_batch()
 
@@ -134,7 +133,6 @@ def dqn_learning(buffer, agent, env,\
                 # optimizer with SGD
                 agent.update(xu_batch, cost_batch, xu_next_batch)
                 
-
                 # Periodically update target network (period = c_step)
                 if k % c_step == 0:
                     agent.update_Q_target()
@@ -179,25 +177,28 @@ if __name__=="__main__":
     QVALUE_LEARNING_RATE         = 1e-3  # alpha coefficient of Q learning algorithm
     DISCOUNT                     = 0.99  # Discount factor 
     PLOT                         = True  # Plot stuff if True
-    exploration_prob             = 1     # initial exploration probability of eps-greedy policy
-    exploration_decreasing_decay = 0.05  # exploration decay for exponential decreasing
-    min_exploration_prob         = 0.001 # minimum of exploration proba
-    nx                           = 2     # number of states
-    nu                           = 1     # number of control input
+    EXPLORATION_PROB             = 1     # initial exploration probability of eps-greedy policy
+    EXPLORATION_DECREASING_DECAY = 0.05  # exploration decay for exponential decreasing
+    MIN_EXPLORATION_PROB         = 0.001 # minimum of exploration proba
     CAPACITY_BUFFER              = 1000  # capacity buffer
     BATCH_SIZE                   = 32    # batch size 
+    MIN_BUFFER                   = 100   # Start sampling from buffer when have length > MIN_BUFFER
+    # ----- Control/State
+    nx                           = 2     # number of states
+    nu                           = 1     # number of control input
     nd_u                         = 11    # number of discretization steps for the joint torque u
-    nd_x                         = 21    # number of discretization steps for the joint state (needed for plot)
+    nd_x                         = 21    # number of discretization steps for the joint state (for plot)
+    # ----- FLAG to TRAIN/LOAD
     FLAG                         = False # False = Load Model
 
 
-    ### --- Initializa agent, buffer and enviroment
+    ### --- Initialize agent, buffer and enviroment
     agent = DQNagent(nx, nu, DISCOUNT, QVALUE_LEARNING_RATE)
     buffer = ReplayBuffer(CAPACITY_BUFFER, BATCH_SIZE)
     env = Pendulum_dci(1, nd_x, nd_x, nd_u)
 
     if (FLAG == True):
-        agent.Q, h_ctg = dqn_learning(buffer, agent, env, DISCOUNT, NEPISODES, MAX_EPISODE_LENGTH, exploration_prob, exploration_decreasing_decay, min_exploration_prob, compute_V_pi_from_Q, PLOT, NPRINT)
+        agent.Q, h_ctg = dqn_learning(buffer, agent, env, DISCOUNT, NEPISODES, MAX_EPISODE_LENGTH, MIN_BUFFER, EXPLORATION_PROB, EXPLORATION_DECREASING_DECAY, MIN_EXPLORATION_PROB, compute_V_pi_from_Q, PLOT, NPRINT)
         
         # save model and weights
         print("\nTraining finished")
@@ -214,17 +215,10 @@ if __name__=="__main__":
         env.plot_V_table(V, xgrid)
         env.plot_policy(pi, xgrid)
         print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
-    
-    # print("Compute real Value function of greedy policy")
-    # MAX_EVAL_ITERS    = 200     # Max number of iterations for policy evaluation
-    # VALUE_THR         = 1e-3    # convergence threshold for policy evaluation
-    # V_pi = policy_eval(env, DISCOUNT, pi, V, MAX_EVAL_ITERS, VALUE_THR, False)
-    # env.plot_V_table(V_pi)
-    # print("Average/min/max Value:", np.mean(V_pi), np.min(V_pi), np.max(V_pi)) 
         
     render_greedy_policy(env, agent)
-    plt.figure()
     if (FLAG == True):
+        plt.figure()
         plt.plot( np.cumsum(h_ctg)/range(1,NEPISODES+1) )
         plt.title ("Average cost-to-go")
 
