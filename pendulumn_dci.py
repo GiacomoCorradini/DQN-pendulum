@@ -26,17 +26,12 @@ class Pendulum_dci:
 
 
     def c2du(self, u):
-        # u = np.clip(u,-self.uMax+1e-3,self.uMax-1e-3)
-        # return int(np.floor((u+self.uMax)/self.DU))
-        u = np.clip(u,-self.uMax,self.uMax)
-        uaux = np.linspace(-self.uMax,self.uMax, self.nu)
-        u = uaux.flat[np.abs(u - uaux).argmin()]
-        return np.floor(u/self.DU)
+        u = np.clip(u,-self.uMax+1e-3,self.uMax-1e-3)
+        return int(np.floor((u+self.uMax)/self.DU))
 
     def d2cu(self, iu):
-        # iu = np.clip(iu,0,self.nu-1) - (self.nu-1)/2
-        # return iu*self.DU
-        return np.array(iu)*self.DU
+        iu = np.clip(iu,0,self.nu-1) - (self.nu-1)/2
+        return iu*self.DU
 
     # use the continuous time reset
     def reset(self,x=None):
