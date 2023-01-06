@@ -156,7 +156,7 @@ def dqn_learning(buffer, agent, env,\
             i_fin[iaux]   = i
             J_fin[iaux]   = J
             eps_fin[iaux] = exploration_prob
-            if(plot):
+            if(plot and env.nx == 2):
                 V, pi, xgrid = compute_V_pi_from_Q(agent)
                 env.plot_V_table(V, xgrid, iaux)
                 env.plot_policy(pi, xgrid, iaux)
@@ -208,11 +208,12 @@ if __name__=="__main__":
     if FLAG == False:
         agent.Q = tf.keras.models.load_model('saved_model/my_model')
         assert(agent.Q)
-   
-    V, pi, xgrid = compute_V_pi_from_Q(agent)
-    env.plot_V_table(V, xgrid)
-    env.plot_policy(pi, xgrid)
-    print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
+    
+    if (nx == 2):
+        V, pi, xgrid = compute_V_pi_from_Q(agent)
+        env.plot_V_table(V, xgrid)
+        env.plot_policy(pi, xgrid)
+        print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
     
     # print("Compute real Value function of greedy policy")
     # MAX_EVAL_ITERS    = 200     # Max number of iterations for policy evaluation
@@ -223,7 +224,7 @@ if __name__=="__main__":
         
     render_greedy_policy(env, DISCOUNT)
     plt.figure()
-    #plt.plot( np.cumsum(h_ctg)/range(1,NEPISODES+1) )
+    plt.plot( np.cumsum(h_ctg)/range(1,NEPISODES+1) )
     plt.title ("Average cost-to-go")
 
     plt.show()

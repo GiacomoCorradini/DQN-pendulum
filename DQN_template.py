@@ -66,9 +66,10 @@ def get_action(exploration_prob, nu, Q, x, EGREEDY):
        u = tf2np(action_values[best_action_index])
     return u
 
-def dqn_learning(env, gamma, Q, Q_target, nEpisodes, maxEpisodeLength, \
-               learningRate, critic_optimizer, exploration_prob, exploration_decreasing_decay, \
-               min_exploration_prob, compute_V_pi_from_Q, plot=False, nprint=1000):
+def dqn_learning(env, gamma, Q, Q_target, nEpisodes, maxEpisodeLength, critic_optimizer, \
+                exploration_prob, exploration_decreasing_decay, min_exploration_prob,\
+                capacity_buffer, min_buffer, batch_size, c_step,\
+                compute_V_pi_from_Q, plot=False, nprint=1000):
     ''' 
         DQN learning algorithm:
         env: environment 
@@ -88,8 +89,6 @@ def dqn_learning(env, gamma, Q, Q_target, nEpisodes, maxEpisodeLength, \
 
     # create the replay buffer
     replay_buffer = []
-    capacity_buffer = 1000
-    batch_size = 32
 
     # Keep track of the cost-to-go history (for plot)
     h_ctg = []
@@ -99,9 +98,7 @@ def dqn_learning(env, gamma, Q, Q_target, nEpisodes, maxEpisodeLength, \
 
     # Make a copy of the initial Q function
     Q = tf.keras.models.clone_model(Q)
-
-    # n° of step to update the target NN
-    c_step = 4
+    
     # count the n° of episodes
     ep = 0
     
@@ -132,7 +129,7 @@ def dqn_learning(env, gamma, Q, Q_target, nEpisodes, maxEpisodeLength, \
             del replay_buffer[:-capacity_buffer]
             
             # do the algorithm only if we have already collected more than 100 episodes
-            if len(replay_buffer) > 100 and k % c_step == 0:  
+            if len(replay_buffer) > min_buffer and k % c_step == 0:  
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
                 batch = rand.choices(replay_buffer, k=batch_size)
                 x_batch, u_batch, cost_batch, x_next_batch, u_next_batch = list(zip(*batch))

@@ -60,6 +60,10 @@ def compute_V_pi_from_Q(Q, vMax=5, xstep=20, nx=2):
     #     pi = u_best[int(u_best.shape[0]/2)]
 
 if __name__=='__main__':
+    ### States and Control
+    nx = 2 #Number of States (2 x joint)
+    nu = 1 #Number of control
+
     ### --- Random seed
     RANDOM_SEED = int((time.time()%10)*1000)
     print("Seed = %d" % RANDOM_SEED)
@@ -69,17 +73,17 @@ if __name__=='__main__':
     NEPISODES                       = 100     # Number of training episodes
     NPRINT                          = 10      # print something every NPRINT episodes
     MAX_EPISODE_LENGTH              = 100     # Max episode length
-    LEARNING_RATE                   = 0.8     # alpha coefficient of Q learning algorithm
+    QVALUE_LEARNING_RATE            = 1e-3    # alpha coefficient of algorithm
     DISCOUNT                        = 0.99    # Discount factor 
     PLOT                            = True    # Plot stuff if True
     exploration_prob                = 1       # initial exploration probability of eps-greedy policy
     exploration_decreasing_decay    = 0.05    # exploration decay for exponential decreasing
     min_exploration_prob            = 0.001   # minimum of exploration probability
+    BUFFER_CAPACITY                 = 1000    # buffer capacity
+    MIN_BUFFER                      = 100     # Start sampling from buffer when have length > MIN_BUFFER
+    BATCH_SIZE                      = 32      # batch size
+    C_STEP                          = 4       # n° of step to update the target NN
     FLAG                            = True  # False = Load Model
-
-    nx = 2 
-    nu = 1
-    QVALUE_LEARNING_RATE = 1e-3
 
     # initialize the Q network and Q_target network
     Q = get_critic(nx, nu)
@@ -101,7 +105,9 @@ if __name__=='__main__':
     env  = Pendulum_dci(1,nd_x,nd_x,nd_u) # enviroment with continuous state and discrete control input
     
     if (FLAG == True):
-        Q, h_ctg = dqn_learning(env, DISCOUNT, Q, Q_target, NEPISODES, MAX_EPISODE_LENGTH, LEARNING_RATE, critic_optimizer, exploration_prob, exploration_decreasing_decay, min_exploration_prob, compute_V_pi_from_Q, PLOT, NPRINT)
+        Q, h_ctg = dqn_learning(env, DISCOUNT, Q, Q_target, NEPISODES, MAX_EPISODE_LENGTH, critic_optimizer, \
+            exploration_prob, exploration_decreasing_decay, min_exploration_prob, \
+            BUFFER_CAPACITY, MIN_BUFFER, BATCH_SIZE,C_STEP,compute_V_pi_from_Q, PLOT, NPRINT)
         
         print("\nTraining finished")
         Q.save('saved_model/my_model')
@@ -117,11 +123,12 @@ if __name__=='__main__':
     if FLAG == False:
         Q = tf.keras.models.load_model('saved_model/my_model')
         assert(Q)
-   
-    V, pi, xgrid = compute_V_pi_from_Q(Q)
-    env.plot_V_table(V, xgrid)
-    env.plot_policy(pi, xgrid)
-    print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
+    
+    if (nx == 2):
+        V, pi, xgrid = compute_V_pi_from_Q(Q)
+        env.plot_V_table(V, xgrid)
+        env.plot_policy(pi, xgrid)
+        print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
     
     # print("Compute real Value function of greedy policy")
     # MAX_EVAL_ITERS    = 200     # Max number of iterations for policy evaluation
@@ -132,7 +139,7 @@ if __name__=='__main__':
         
     render_greedy_policy(env, Q, DISCOUNT)
     plt.figure()
-    #plt.plot( np.cumsum(h_ctg)/range(1,NEPISODES+1) )
+    plt.plot( np.cumsum(h_ctg)/range(1,NEPISODES+1) )
     plt.title ("Average cost-to-go")
 
     plt.show()
