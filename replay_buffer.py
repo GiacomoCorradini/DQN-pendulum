@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from collections import deque
 
 class ReplayBuffer:
     """
@@ -7,7 +8,7 @@ class ReplayBuffer:
     of the agent with the environment.
     """
     def __init__(self, capacity_buffer_ = 1000, batch_size_ = 32):
-        self.replay_buffer = []
+        self.replay_buffer = deque(maxlen=capacity_buffer_)
         self.capacity_buffer = capacity_buffer_
         self.batch_size = batch_size_
 
@@ -19,7 +20,7 @@ class ReplayBuffer:
         experience = [state, control, cost, next_state, control_next]
         self.replay_buffer.append(experience)
 
-        del self.replay_buffer[:-self.capacity_buffer]
+        #del self.replay_buffer[:-self.capacity_buffer]
 
     def sample_batch(self):
         """
