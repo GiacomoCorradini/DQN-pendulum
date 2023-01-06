@@ -61,7 +61,7 @@ def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
     #     pi = u_best[int(u_best.shape[0]/2)]
 
 def dqn_learning(buffer, agent, env,\
-                 gamma, nEpisodes, maxEpisodeLength, min_buffer, c_step\
+                 gamma, nEpisodes, maxEpisodeLength, min_buffer, c_step,\
                  exploration_prob, exploration_decreasing_decay, min_exploration_prob, \
                  compute_V_pi_from_Q, plot=False, nprint=1000):
     ''' 
