@@ -12,41 +12,18 @@ class Pendulum_dci:
         Guassian noise can be added in the dynamics. 
         Cost is -1 if the goal state has been reached, zero otherwise.
     '''
-    def __init__(self, n_joint = 1, nq=21, nv=21, nu=11, vMax=5, uMax=5, dt=5e-2, ndt=1, noise_stddev=0):
-        self.njoint = n_joint
-        self.pendulum = Pendulum(n_joint,noise_stddev)
-        self.pendulum.DT  = dt    # Time step length
-        self.pendulum.NDT = ndt   # Number of Euler steps per integration (internal)
-        self.nq = nq        # Number of discretization steps for joint angle
-        self.nv = nv        # Number of discretization steps for joint velocity
-        self.nu = nu        # Number of discretization steps for joint torque
-                                  # the value above must be odd
-        self.vMax = vMax          # Max velocity (v in [-vmax,vmax])
-        self.uMax = uMax          # Max torque (u in [-umax,umax])
-        self.dt = dt              # time step
-        self.DU = 2*uMax/nu       # discretization resolution for joint torque
-        self.DQ = 2*pi/nq   # discretization resolution for joint angle
-        self.DV = 2*vMax/nv # discretization resolution for joint velocity
+    def __init__(self, n_joint = 1, nu=11, vMax=5, uMax=5, dt=5e-2, ndt=1, noise_stddev=0):
+        self.njoint       = n_joint
+        self.pendulum     = Pendulum(n_joint,noise_stddev)
+        self.pendulum.DT  = dt         # Time step length
+        self.pendulum.NDT = ndt        # Number of Euler steps per integration (internal)
+        self.nu           = nu         # Number of discretization steps for joint torque
+                                       # the value above must be odd
+        self.vMax         = vMax       # Max velocity (v in [-vmax,vmax])
+        self.uMax         = uMax       # Max torque (u in [-umax,umax])
+        self.dt           = dt         # time step
+        self.DU           = 2*uMax/nu  # discretization resolution for joint torque
 
-    # @property
-    # def nqv(self): return [self.nq,self.nv]
-    # @property
-    # def nx(self): return self.nq*self.nv
-    
-    # vertical position
-  
-    def goal(self, x):
-        goal_ = False
-        if (x[0] > 2*pi - 0.1 or x[0] < 0.1) and abs(x[1]) < 0.5: goal_ = True
-        return goal_
-
-    # Clip state
-    def xclip(self, x):
-        # q is between 0 and 2pi
-        x[0] = (x[0]+pi)%(2*pi) 
-        #velocity bound
-        x[1] = np.clip(x[1],-self.vMax+1e-3,self.vMax-1e-3) 
-        return x
 
     def c2du(self, u):
         u = np.clip(u,-self.uMax+1e-3,self.uMax-1e-3)
@@ -56,35 +33,6 @@ class Pendulum_dci:
         iu = np.clip(iu,0,self.nu-1) - (self.nu-1)/2
         return iu*self.DU
 
-    # def c2d(self, qv):
-    #     '''
-    #         From continuous to 2d discrete.
-    #         input: qv is a general vector
-    #         output: return discrete q and v
-    #     '''
-    #     return np.array([self.c2dq(qv[0]), self.c2dv(qv[1])])
-
-    #Discrete to continuous
-    def d2cq(self, iq):
-        iq = np.clip(iq,0,self.nq-1)
-        return iq*self.DQ - pi + 0.5*self.DQ
-    
-    def d2cv(self, iv):
-        iv = np.clip(iv,0,self.nv-1) - (self.nv-1)/2
-        return iv*self.DV
-    
-    # def d2c(self, iqv):
-    #     '''From 2d discrete to continuous'''
-    #     return np.array([self.d2cq(iqv[0]), self.d2cv(iqv[1])])
-    
-    # in renforcement learning works with one single value so we have to convert into  a single value
-
-    # ''' From 2d discrete to 1d discrete '''
-    # def x2i(self, x): return x[0]+x[1]*self.nq
-    
-    # ''' From 1d discrete to 2d discrete '''
-    # def i2x(self, i): return [ i%self.nq, int(np.floor(i/self.nq)) ]
-
     # use the continuous time reset
     def reset(self,x=None):
         self.x = self.pendulum.reset(x)
@@ -92,8 +40,6 @@ class Pendulum_dci:
 
     def step(self,iu):
         ''' Simulate one time step '''
-        #cost     = -1 if self.goal(self.x) else 0
-        #self.x   = self.dynamics(iu)
         u   = self.d2cu(iu)
         self.x, cost = self.pendulum.step(u)
         return self.x, cost
@@ -102,12 +48,6 @@ class Pendulum_dci:
         self.pendulum.render()
         self.pendulum.display(np.array([self.x[0],]))
         time.sleep(self.pendulum.DT)
- 
-    def dynamics(self,iu):
-        #x   = self.x
-        #u   = self.d2cu(iu)
-        self.xc,_ = self.pendulum.dynamics(self.x,iu)
-        return self.xc# self.xclip(self.x)
     
     def plot_V_table(self, V, x, i=0):
         ''' Plot the given Value table V '''
@@ -141,16 +81,30 @@ if __name__=="__main__":
     env = Pendulum_dci()   
 
     x0 = x = env.reset(np.asarray([[0.],[0.]]))
-    u = 0 #env.c2du(0)
+    print(x)
+    u = env.c2du(0)
     #print(u)
     #print(env.d2cu(u))
     cost = []
+    X = []
+    V = []
     for i in range(100):
-        u += 0.0
+        u += 0.01
         x,c = env.step([u])
         cost.append(c)
+        X.append(x[:env.pendulum.nq])
+        V.append(x[env.pendulum.nq:])
         env.render()
         #print(c)
-    
+    print(x)
+        
+    plt.figure()
     plt.plot( np.cumsum(cost)/range(1,100+1) )
+    plt.title("cost")
+    plt.figure()
+    plt.plot(np.concatenate(X))
+    plt.title("pos")
+    plt.figure()
+    plt.plot(np.concatenate(V))
+    plt.title("vel")
     plt.show()

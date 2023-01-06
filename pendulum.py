@@ -167,7 +167,8 @@ class Pendulum:
 
             q    += (v+0.5*DT*a)*DT
             v    += a*DT
-            cost += (sumsq(q) + 1e-1*sumsq(v) + 1e-3*sumsq(u))*DT # cost function
+            cost += (sumsq(q)*5 + 3*sumsq(v))*DT # cost function
+#            cost += (sumsq(q) + 1e-1*sumsq(v) + 1e-3*sumsq(u))*DT # cost function
 
             if display:
                 self.display(q)
@@ -190,17 +191,30 @@ if __name__=="__main__":
     print("Seed = %d" % RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
 
-    env = Pendulum()   
+    env = Pendulum(1) 
 
     x0 = x = env.reset(np.asarray([[0.],[0.]]))
     u = 0
     cost = []
+    X = []
+    V = []
     for i in range(100):
         u += 0.01
         x,c = env.step([u])
+        X.append(x[:env.nq])
+        V.append(x[env.nq:])
         cost.append(c)
         env.render()
         #print(c)
+        #print(x)
     
+    plt.figure()
     plt.plot( np.cumsum(cost)/range(1,100+1) )
+    plt.title("cost")
+    plt.figure()
+    plt.plot(np.concatenate(X))
+    plt.title("pos")
+    plt.figure()
+    plt.plot(np.concatenate(V))
+    plt.title("vel")
     plt.show()

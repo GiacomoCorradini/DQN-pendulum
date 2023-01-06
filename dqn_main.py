@@ -16,16 +16,16 @@ def render_greedy_policy(env, agent, x0=None, maxiter=100):
     '''Roll-out from random state using greedy policy.'''
     x0 = x = env.reset(x0)
     costToGo = 0.0
-    gamma_i = 1
-    X_sim = np.zeros([maxiter,env.pendulum.nx])   # store 
-    U_sim = np.zeros(maxiter)          # store 
+    gamma_i  = 1
+    X_sim    = np.zeros([maxiter,env.pendulum.nx])   # store x
+    U_sim    = np.zeros(maxiter)                     # store u
     for i in range(maxiter):
-        action_values = agent.Q.predict(x)
+        action_values     = agent.Q.predict(x)
         best_action_index = tf.argmin(action_values)
         U_sim[i] = agent.tf2np(action_values[best_action_index])
-        x,c = env.step([U_sim[i]])
+        x,c      = env.step([U_sim[i]])
         costToGo += gamma_i*c
-        gamma_i *= agent.DISCOUNT
+        gamma_i  *= agent.DISCOUNT
         env.render()
         X_sim[i,:] = np.concatenate(x)
     print("Real cost to go of state", x0, ":", costToGo)
@@ -34,17 +34,18 @@ def render_greedy_policy(env, agent, x0=None, maxiter=100):
 def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
     ''' Compute Value table and greedy policy pi from Q table. '''
 
-    x = np.empty(shape = (nx,xstep+1))
-    DQ = 2*np.pi/xstep
-    DV = 2*vMax/xstep
+    x      = np.empty(shape = (nx,xstep+1))
+    DQ     = 2*np.pi/xstep
+    DV     = 2*vMax/xstep
     x[0,:] = np.arange(-np.pi,np.pi+DQ, DQ)
     x[1,:] = np.arange(-vMax, vMax+DV, DV)
-    pi = np.empty(shape = (xstep+1,xstep+1))
-    V = np.empty(shape = (xstep+1,xstep+1))
+
+    pi     = np.empty(shape = (xstep+1,xstep+1))
+    V      = np.empty(shape = (xstep+1,xstep+1))
 
     for i in range(np.shape(x)[1]):
         for j in range(np.shape(x)[1]):
-            action_values = agent.Q.predict([[x[0,i]],[x[1,j]]])
+            action_values     = agent.Q.predict([[x[0,i]],[x[1,j]]])
             best_action_index = tf.argmin(action_values)
             pi[i,j] = agent.tf2np(action_values[best_action_index])
             V[i,j]  = agent.tf2np(tf.keras.backend.min(action_values))
@@ -84,7 +85,7 @@ def dqn_learning(buffer, agent, env,\
         nprint: print some info every nprint iterations
     '''
     # Keep track of the cost-to-go history (for plot)
-    h_ctg = []
+    h_ctg      = []
     i_fin      = np.zeros(int(nEpisodes/nprint))
     J_fin      = np.zeros(int(nEpisodes/nprint))
     eps_fin    = np.zeros(int(nEpisodes/nprint))
@@ -123,12 +124,12 @@ def dqn_learning(buffer, agent, env,\
                 x_batch, u_batch, cost_batch, x_next_batch, u_next_batch = buffer.sample_batch()
 
                 # collect together state and control
-                xu_batch = np.append(x_batch, u_batch)
+                xu_batch      = np.append(x_batch, u_batch)
                 xu_next_batch = np.append(x_next_batch, u_next_batch)
 
                 # convert numpy to tensorflow
-                xu_batch = agent.np2tf(xu_batch)
-                cost_batch = agent.np2tf(cost_batch)
+                xu_batch      = agent.np2tf(xu_batch)
+                cost_batch    = agent.np2tf(cost_batch)
                 xu_next_batch = agent.np2tf(xu_next_batch)
 
                 # optimizer with SGD
@@ -194,20 +195,14 @@ if __name__=="__main__":
     # ----- FLAG to TRAIN/LOAD
     FLAG                         = True # False = Load Model
 
-    print("ciao")
-
     ### --- Initialize agent, buffer and enviroment
-    env = Pendulum_dci(njoint, nd_x, nd_x, nd_u)
-    print("ciao")
+    env = Pendulum_dci(njoint, nd_u)
 
     agent = DQNagent(nx, nu, DISCOUNT, QVALUE_LEARNING_RATE)
-    print("ciao")
 
     buffer = ReplayBuffer(CAPACITY_BUFFER, BATCH_SIZE)
-    print("ciao")
 
     if FLAG == True:
-        print("ciao")
 
         agent.Q, h_ctg = dqn_learning(buffer, agent, env, DISCOUNT, NEPISODES, MAX_EPISODE_LENGTH, MIN_BUFFER, C_STEP, EXPLORATION_PROB, EXPLORATION_DECREASING_DECAY, MIN_EXPLORATION_PROB, compute_V_pi_from_Q, PLOT, NPRINT)
         
@@ -217,21 +212,22 @@ if __name__=="__main__":
         print("\nSave NN weights to file (in HDF5)")
         agent.Q.save_weights('saved_model/weight.h5')
 
-    if FLAG == False:
+        #plot cost
+        plt.figure()
+        plt.plot( np.cumsum(h_ctg)/range(1,MAX_EPISODE_LENGTH+1) )
+        plt.title ("Average cost-to-go")
+
+    if FLAG == False: #load model
         agent.Q = tf.keras.models.load_model('saved_model/my_model')
         assert(agent.Q)
     
-    if (njoint == 1):
+    if (njoint == 1): #plot V, pi for joint 1
         V, pi, xgrid = compute_V_pi_from_Q(agent)
         env.plot_V_table(V, xgrid)
         env.plot_policy(pi, xgrid)
         print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
         
     X_sim, U_sim = render_greedy_policy(env, agent)
-    if FLAG:
-        plt.figure()
-        plt.plot( np.cumsum(h_ctg)/range(1,MAX_EPISODE_LENGTH+1) )
-        plt.title ("Average cost-to-go")
 
     if PLOT_TRAJ:
         time_vec = np.linspace(0.0,MAX_EPISODE_LENGTH*env.pendulum.DT,MAX_EPISODE_LENGTH)
@@ -243,7 +239,6 @@ if __name__=="__main__":
         plt.gca().set_xlabel('Time [s]')
         plt.gca().set_ylabel('[Nm]')
         plt.title ("Torque input")
-        # leg = plt.legend(["1st joint torque", "1st joint ref. torque","2nd joint torque", "2nd joint ref. torque"],loc='upper right')
     
         plt.figure()
         plt.plot(time_vec, X_sim[:,0],'b')
