@@ -151,7 +151,7 @@ def dqn_learning(buffer, agent, env,\
             i_fin[iaux]   = i
             J_fin[iaux]   = J
             eps_fin[iaux] = exploration_prob
-            if(plot and env.nx == 2):
+            if(plot and env.n_joint == 1):
                 V, pi, xgrid = compute_V_pi_from_Q(agent)
                 env.plot_V_table(V, xgrid, iaux)
                 env.plot_policy(pi, xgrid, iaux)
@@ -168,24 +168,25 @@ if __name__=="__main__":
     np.random.seed(RANDOM_SEED)
 
     ### --- Hyper paramaters
-    NEPISODES                    = 100   # Number of training episodes
-    NPRINT                       = 10    # print something every NPRINT episodes
-    MAX_EPISODE_LENGTH           = 100   # Max episode length
-    QVALUE_LEARNING_RATE         = 1e-3  # alpha coefficient of Q learning algorithm
-    DISCOUNT                     = 0.99  # Discount factor 
-    PLOT                         = True  # Plot stuff if True
-    EXPLORATION_PROB             = 1     # initial exploration probability of eps-greedy policy
-    EXPLORATION_DECREASING_DECAY = 0.05  # exploration decay for exponential decreasing
-    MIN_EXPLORATION_PROB         = 0.001 # minimum of exploration proba
-    CAPACITY_BUFFER              = 1000  # capacity buffer
-    BATCH_SIZE                   = 32    # batch size 
-    MIN_BUFFER                   = 100   # Start sampling from buffer when have length > MIN_BUFFER
-    C_STEP                       = 4     # Every c step update w  
+    NEPISODES                    = 100       # Number of training episodes
+    NPRINT                       = 10        # print something every NPRINT episodes
+    MAX_EPISODE_LENGTH           = 100       # Max episode length
+    QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
+    DISCOUNT                     = 0.99      # Discount factor 
+    PLOT                         = True      # Plot stuff if True
+    EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
+    EXPLORATION_DECREASING_DECAY = 0.05      # exploration decay for exponential decreasing
+    MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration proba
+    CAPACITY_BUFFER              = 1000      # capacity buffer
+    BATCH_SIZE                   = 32        # batch size 
+    MIN_BUFFER                   = 100       # Start sampling from buffer when have length > MIN_BUFFER
+    C_STEP                       = 4         # Every c step update w  
     # ----- Control/State
-    nx                           = 2     # number of states
-    nu                           = 1     # number of control input
-    nd_u                         = 11    # number of discretization steps for the joint torque u
-    nd_x                         = 21    # number of discretization steps for the joint state (for plot)
+    njoint                       = 1         # number of joint
+    nx                           = 2*njoint  # number of states
+    nu                           = 1         # number of control input
+    nd_u                         = 11        # number of discretization steps for the joint torque u
+    nd_x                         = 21        # number of discretization steps for the joint state (for plot)
     # ----- FLAG to TRAIN/LOAD
     FLAG                         = False # False = Load Model
 
@@ -193,7 +194,7 @@ if __name__=="__main__":
     ### --- Initialize agent, buffer and enviroment
     agent = DQNagent(nx, nu, DISCOUNT, QVALUE_LEARNING_RATE)
     buffer = ReplayBuffer(CAPACITY_BUFFER, BATCH_SIZE)
-    env = Pendulum_dci(1, nd_x, nd_x, nd_u)
+    env = Pendulum_dci(njoint, nd_x, nd_x, nd_u)
 
     if (FLAG == True):
         agent.Q, h_ctg = dqn_learning(buffer, agent, env, DISCOUNT, NEPISODES, MAX_EPISODE_LENGTH, MIN_BUFFER, EXPLORATION_PROB, EXPLORATION_DECREASING_DECAY, MIN_EXPLORATION_PROB, compute_V_pi_from_Q, PLOT, NPRINT)
@@ -208,7 +209,7 @@ if __name__=="__main__":
         agent.Q = tf.keras.models.load_model('saved_model/my_model')
         assert(agent.Q)
     
-    if (nx == 2):
+    if (njoint == 1):
         V, pi, xgrid = compute_V_pi_from_Q(agent)
         env.plot_V_table(V, xgrid)
         env.plot_policy(pi, xgrid)

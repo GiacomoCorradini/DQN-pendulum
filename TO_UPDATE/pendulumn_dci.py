@@ -13,6 +13,7 @@ class Pendulum_dci:
         Cost is -1 if the goal state has been reached, zero otherwise.
     '''
     def __init__(self, n_joint = 1, nq=21, nv=21, nu=11, vMax=5, uMax=5, dt=5e-2, ndt=1, noise_stddev=0):
+        self.njoint = n_joint
         self.pendulum = Pendulum(n_joint,noise_stddev)
         self.pendulum.DT  = dt    # Time step length
         self.pendulum.NDT = ndt   # Number of Euler steps per integration (internal)

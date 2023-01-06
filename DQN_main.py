@@ -61,7 +61,8 @@ def compute_V_pi_from_Q(Q, vMax=5, xstep=20, nx=2):
 
 if __name__=='__main__':
     ### States and Control
-    nx = 2 #Number of States (2 x joint)
+    njoint = 1 #Number of joints
+    nx = 2*njoint #Number of States (2 x joint)
     nu = 1 #Number of control
 
     ### --- Random seed
@@ -102,7 +103,7 @@ if __name__=='__main__':
     ### --- Environment
     nd_u = 11                 # number of discretization steps for the joint torque u
     nd_x = 21
-    env  = Pendulum_dci(1,nd_x,nd_x,nd_u) # enviroment with continuous state and discrete control input
+    env  = Pendulum_dci(njoint,nd_x,nd_x,nd_u) # enviroment with continuous state and discrete control input
     
     if (FLAG == True):
         Q, h_ctg = dqn_learning(env, DISCOUNT, Q, Q_target, NEPISODES, MAX_EPISODE_LENGTH, critic_optimizer, \
@@ -124,7 +125,7 @@ if __name__=='__main__':
         Q = tf.keras.models.load_model('saved_model/my_model')
         assert(Q)
     
-    if (nx == 2):
+    if (njoint == 1):
         V, pi, xgrid = compute_V_pi_from_Q(Q)
         env.plot_V_table(V, xgrid)
         env.plot_policy(pi, xgrid)
