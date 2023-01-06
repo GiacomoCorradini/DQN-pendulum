@@ -22,9 +22,9 @@ def render_greedy_policy(env, agent, x0=None, maxiter=20):
         best_action_index = tf.argmin(action_values)
         u = agent.tf2np(action_values[best_action_index])
 #        print("State", x, "Control", u, "Q", Q[x,u])
-        x,c = env.step(u)
+        x,c = env.step([u])
         costToGo += gamma_i*c
-        gamma_i *= agent.gamma
+        gamma_i *= agent.DISCOUNT
         env.render()
     print("Real cost to go of state", x0, ":", costToGo)
 
@@ -110,7 +110,7 @@ def dqn_learning(buffer, agent, env,\
             u = agent.get_action(exploration_prob, env, x, True)
 
             # observe cost and next state (step = calculate dynamics)
-            x_next, cost = env.step(u)
+            x_next, cost = env.step([u])
 
             # next control greedy
             u_next = agent.get_action(exploration_prob, env, x_next, False)
@@ -188,7 +188,7 @@ if __name__=="__main__":
     BATCH_SIZE                   = 32    # batch size 
     nd_u                         = 11    # number of discretization steps for the joint torque u
     nd_x                         = 21    # number of discretization steps for the joint state (needed for plot)
-    FLAG                         = True # False = Load Model
+    FLAG                         = False # False = Load Model
 
 
     ### --- Initializa agent, buffer and enviroment
@@ -222,9 +222,10 @@ if __name__=="__main__":
     # env.plot_V_table(V_pi)
     # print("Average/min/max Value:", np.mean(V_pi), np.min(V_pi), np.max(V_pi)) 
         
-    render_greedy_policy(env, DISCOUNT)
+    render_greedy_policy(env, agent)
     plt.figure()
-    plt.plot( np.cumsum(h_ctg)/range(1,NEPISODES+1) )
-    plt.title ("Average cost-to-go")
+    if (FLAG == True):
+        plt.plot( np.cumsum(h_ctg)/range(1,NEPISODES+1) )
+        plt.title ("Average cost-to-go")
 
     plt.show()

@@ -16,6 +16,7 @@ import pinocchio as pin
 from display import Display
 from numpy.linalg import inv
 import time
+import matplotlib.pyplot as plt
 
 class Visual:
     '''
@@ -175,10 +176,31 @@ class Pendulum:
         x[:self.nq] = modulePi(q)
         x[self.nq:] = np.clip(v,-self.vmax,self.vmax)
         
-        return x,-cost
+        return x,cost
      
     def render(self):
         q = self.x[:self.nq]
         self.display(q)
         time.sleep(self.DT)
  
+if __name__=="__main__":
+
+    ### --- Random seed
+    RANDOM_SEED = int((time.time()%10)*1000)
+    print("Seed = %d" % RANDOM_SEED)
+    np.random.seed(RANDOM_SEED)
+
+    env = Pendulum()   
+
+    x0 = x = env.reset(np.asarray([[0.],[0.]]))
+    u = 0
+    cost = []
+    for i in range(100):
+        u += 0.01
+        x,c = env.step([u])
+        cost.append(c)
+        env.render()
+        print(c)
+    
+    plt.plot( np.cumsum(cost)/range(1,100+1) )
+    plt.show()
