@@ -12,7 +12,7 @@ class Pendulum_dci:
         Guassian noise can be added in the dynamics. 
         Cost is -1 if the goal state has been reached, zero otherwise.
     '''
-    def __init__(self, n_joint = 1, nu=11, vMax=5, uMax=5, dt=5e-2, ndt=1, noise_stddev=0):
+    def __init__(self, n_joint = 1, nu=11, vMax=5, uMax=2, dt=5e-2, ndt=1, noise_stddev=0):
         self.njoint       = n_joint
         self.pendulum     = Pendulum(n_joint,noise_stddev)
         self.pendulum.DT  = dt         # Time step length
@@ -26,12 +26,17 @@ class Pendulum_dci:
 
 
     def c2du(self, u):
-        u = np.clip(u,-self.uMax+1e-3,self.uMax-1e-3)
-        return int(np.floor((u+self.uMax)/self.DU))
+        # u = np.clip(u,-self.uMax+1e-3,self.uMax-1e-3)
+        # return int(np.floor((u+self.uMax)/self.DU))
+        u = np.clip(u,-self.uMax,self.uMax)
+        uaux = np.linspace(-self.uMax,self.uMax, self.nu)
+        u = uaux.flat[np.abs(u - uaux).argmin()]
+        return np.floor(u/self.DU)
 
     def d2cu(self, iu):
-        iu = np.clip(iu,0,self.nu-1) - (self.nu-1)/2
-        return iu*self.DU
+        # iu = np.clip(iu,0,self.nu-1) - (self.nu-1)/2
+        # return iu*self.DU
+        return np.array(iu)*self.DU
 
     # use the continuous time reset
     def reset(self,x=None):
