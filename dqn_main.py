@@ -24,9 +24,9 @@ def render_greedy_policy(env, agent, exploration_prob, x0=None, maxiter=100):
         x,c      = env.step([u])
         costToGo += gamma_i*c
         gamma_i  *= agent.DISCOUNT
-        env.render()
-        X_sim[i,:] = np.concatenate(x)
-        U_sim[i] = u
+        #env.render()
+        X_sim[i,:] = np.concatenate(np.array([x]).T)
+        U_sim[i] = env.d2cu(u)
     print("Real cost to go of state", x0, ":", costToGo)
     return X_sim, U_sim
 
@@ -111,13 +111,14 @@ def dqn_learning(buffer, agent, env,\
 
             # observe cost and next state (step = calculate dynamics)
             x_next, cost = env.step([u])
+            print(u)
 
             # next control greedy
             u_next = agent.get_action(exploration_prob, env, x_next, False)
         
             # store the experience (s,a,r,s',a') in the replay_buffer
             buffer.store_experience(x, u, cost, x_next, u_next)
-            
+
             if buffer.get_length() > min_buffer and k % c_step == 0:
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
                 xu_batch, xu_next_batch, cost_batch = buffer.sample_batch(env)
@@ -127,7 +128,6 @@ def dqn_learning(buffer, agent, env,\
                 xu_batch      = agent.np2tf(xu_batch)
                 cost_batch    = agent.np2tf(cost_batch)
                 xu_next_batch = agent.np2tf(xu_next_batch)
-
 
                 # optimizer with SGD
                 agent.update(xu_batch, cost_batch, xu_next_batch)
@@ -143,7 +143,7 @@ def dqn_learning(buffer, agent, env,\
         h_ctg.append(J_avg)
 
         # update the exploration probability with an exponential decay: 
-        exploration_prob = max(np.exp(-exploration_decreasing_decay*k), min_exploration_prob)
+        exploration_prob = max(np.exp(-exploration_decreasing_decay*i), min_exploration_prob)
         
         # use the function compute_V_pi_from_Q(env, Q) to compute and plot V and pi
         if(i%nprint==0):
