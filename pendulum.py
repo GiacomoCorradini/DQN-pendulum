@@ -168,7 +168,7 @@ class Pendulum:
             q    += (v+0.5*DT*a)*DT
             v    += a*DT
             #cost += (sumsq(q)*5 + 3*sumsq(v))*DT # cost function
-            cost += (sumsq(q) + 1e-1*sumsq(v) + 1e-3*sumsq(u))*DT # cost function
+            cost += (sumsq(q/(2*np.pi)) + 1e-1*sumsq(v/(2*self.vmax)) + 1e-3*sumsq(u/(2*self.umax)))*DT # cost function
 
             if display:
                 self.display(q)

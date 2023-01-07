@@ -175,9 +175,9 @@ if __name__=="__main__":
     QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
     DISCOUNT                     = 0.99      # Discount factor 
     PLOT                         = True      # Plot stuff if True
-    PLOT_TRAJ                    = True     # Plot trajectory if True
+    PLOT_TRAJ                    = True      # Plot trajectory if True
     EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
-    EXPLORATION_DECREASING_DECAY = 0.05      # exploration decay for exponential decreasing
+    EXPLORATION_DECREASING_DECAY = 0.02      # exploration decay for exponential decreasing
     MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration proba
     CAPACITY_BUFFER              = 1000      # capacity buffer
     BATCH_SIZE                   = 32        # batch size 
