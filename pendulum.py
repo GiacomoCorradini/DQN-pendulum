@@ -191,7 +191,7 @@ if __name__=="__main__":
     print("Seed = %d" % RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
 
-    env = Pendulum(2) 
+    env = Pendulum(1) 
 
     q0 = np.pi*(np.random.rand(env.nq)*2-1)
     v0 = np.random.rand(env.nv)*2-1
@@ -202,6 +202,7 @@ if __name__=="__main__":
     cost = []
     X = []
     V = []
+    U = []
     for i in range(100):
         u[0] += 0.01
         if env.nu == 2:
@@ -209,6 +210,7 @@ if __name__=="__main__":
         x,c = env.step(u)
         X.append(x[:env.nq])
         V.append(x[env.nq:])
+        U.append(u)
         cost.append(c)
         #env.render()
         #print(c)
@@ -223,4 +225,7 @@ if __name__=="__main__":
     plt.figure()
     plt.plot(np.reshape(V,(100,env.nq)))
     plt.title("vel")
+    plt.figure()
+    plt.plot(np.reshape(U,(100,env.nu)))
+    plt.title("torque")
     plt.show()

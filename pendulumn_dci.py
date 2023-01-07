@@ -78,23 +78,25 @@ if __name__=="__main__":
     print("Seed = %d" % RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
 
-    env = Pendulum_dci()   
+    env = Pendulum_dci(2)   
 
-    x0 = x = env.reset(np.asarray([[0.],[0.]]))
-    print(x)
-    u = env.c2du(0)
-    #print(u)
-    #print(env.d2cu(u))
+    x0 = x = env.reset()
+    u = np.zeros(env.pendulum.nu)
+
     cost = []
     X = []
     V = []
+    U = []
     for i in range(100):
-        u += 0.01
-        x,c = env.step([u])
+        u[0] += 0.01
+        if env.nu == 2:
+            u[1] = 0
+        x,c = env.step(u)
         cost.append(c)
         X.append(x[:env.pendulum.nq])
         V.append(x[env.pendulum.nq:])
-        env.render()
+        U.append(u)
+        #env.render()
         #print(c)
     print(x)
         
@@ -102,9 +104,13 @@ if __name__=="__main__":
     plt.plot( np.cumsum(cost)/range(1,100+1) )
     plt.title("cost")
     plt.figure()
-    plt.plot(np.concatenate(X))
+    plt.plot(np.reshape(X,(100,env.pendulum.nq)))
     plt.title("pos")
     plt.figure()
-    plt.plot(np.concatenate(V))
+    plt.plot(np.reshape(V,(100,env.pendulum.nq)))
     plt.title("vel")
+    plt.figure()
+    plt.plot(np.reshape(U,(100,env.pendulum.nu)))
+    plt.title("torque")
+    plt.show()
     plt.show()
