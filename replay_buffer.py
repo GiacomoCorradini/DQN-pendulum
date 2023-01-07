@@ -20,8 +20,6 @@ class ReplayBuffer:
         experience = [state, control, cost, next_state, control_next]
         self.replay_buffer.append(experience)
 
-        #del self.replay_buffer[:-self.capacity_buffer]
-
     def sample_batch(self, env):
         """
         Sample a batch of experince (size = batch_size) for training

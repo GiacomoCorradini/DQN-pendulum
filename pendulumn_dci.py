@@ -89,13 +89,15 @@ if __name__=="__main__":
     U = []
     for i in range(100):
         u[0] += 0.01
-        if env.nu == 2:
+        if env.pendulum.nu == 2:
             u[1] = 0
+            U.append([u[0],u[1]])
+        else:   
+            U.append(u[0])
         x,c = env.step(u)
         cost.append(c)
         X.append(x[:env.pendulum.nq])
         V.append(x[env.pendulum.nq:])
-        U.append(u)
         #env.render()
         #print(c)
     print(x)
@@ -112,5 +114,4 @@ if __name__=="__main__":
     plt.figure()
     plt.plot(np.reshape(U,(100,env.pendulum.nu)))
     plt.title("torque")
-    plt.show()
     plt.show()

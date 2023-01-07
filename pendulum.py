@@ -191,31 +191,28 @@ if __name__=="__main__":
     print("Seed = %d" % RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
 
-    env = Pendulum(1) 
+    env = Pendulum(2) 
 
-    q0 = np.pi*(np.random.rand(env.nq)*2-1)
-    v0 = np.random.rand(env.nv)*2-1
-    x0 = np.concatenate([q0,v0])
-
-    x0 = x = env.reset(x0)
-    u = np.empty(env.nu)
+    x0 = x = env.reset(np.zeros(env.nx))
+    u = np.zeros(env.nu)
     cost = []
     X = []
     V = []
     U = []
     for i in range(100):
-        u[0] += 0.01
+        u[0,] += 0.01
         if env.nu == 2:
             u[1] = 0
+            U.append([u[0],u[1]])
+        else:   
+            U.append(u[0])  
         x,c = env.step(u)
         X.append(x[:env.nq])
         V.append(x[env.nq:])
-        U.append(u)
         cost.append(c)
         #env.render()
-        #print(c)
-        #print(x)
     
+    print(U)
     plt.figure()
     plt.plot( np.cumsum(cost)/range(1,100+1) )
     plt.title("cost")
