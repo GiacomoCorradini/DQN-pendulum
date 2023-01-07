@@ -126,10 +126,15 @@ def dqn_learning(buffer, agent, env,\
                 xu_batch      = np.append(x_batch, u_batch)
                 xu_next_batch = np.append(x_next_batch, u_next_batch)
 
+                print(xu_batch)
+
                 # convert numpy to tensorflow
                 xu_batch      = agent.np2tf(xu_batch)
                 cost_batch    = agent.np2tf(cost_batch)
                 xu_next_batch = agent.np2tf(xu_next_batch)
+
+                print(xu_batch)
+
 
                 # optimizer with SGD
                 agent.update(xu_batch, cost_batch, xu_next_batch)
@@ -149,7 +154,7 @@ def dqn_learning(buffer, agent, env,\
         
         # use the function compute_V_pi_from_Q(env, Q) to compute and plot V and pi
         if(i%nprint==0):
-            print("Q learning - Iter %d, J=%.1f, eps=%.1f"%(i,J,100*exploration_prob))
+            print("DQN - Episode %d, J=%.1f, eps=%.1f"%(i,J,100*exploration_prob))
             iaux = int(i/nprint)
             i_fin[iaux]   = i
             J_fin[iaux]   = J
@@ -192,7 +197,7 @@ if __name__=="__main__":
     nd_u                         = 11        # number of discretization steps for the joint torque u
     nd_x                         = 21        # number of discretization steps for the joint state (for plot)
     # ----- FLAG to TRAIN/LOAD
-    FLAG                         = False # False = Load Model
+    FLAG                         = True # False = Load Model
 
     ### --- Initialize agent, buffer and enviroment
     env = Pendulum_dci(njoint, nd_u)
