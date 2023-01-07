@@ -41,13 +41,15 @@ def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
 
     pi     = np.empty(shape = (xstep+1,xstep+1))
     V      = np.empty(shape = (xstep+1,xstep+1))
+    Q = []
 
     for i in range(np.shape(x)[1]):
         for j in range(np.shape(x)[1]):
-            action_values     = agent.Q.predict([[x[0,i]],[x[1,j]]])
-            best_action_index = tf.argmin(action_values)
-            pi[i,j] = agent.tf2np(action_values[best_action_index])
-            V[i,j]  = agent.tf2np(tf.keras.backend.min(action_values))
+            xu = np.reshape([x[0,i]*np.ones(10),x[1,j]*np.ones(10),np.arange(10)],(10,1,3))
+            Q        = np.min(agent.tf2np(agent.Q(xu)))
+            u        = np.argmin(Q[:,i,j])
+            pi[i,j]  = agent.tf2np(Q[u])
+            V[i,j]   = Q
 
     return V, pi, x
     
@@ -146,7 +148,7 @@ def dqn_learning(buffer, agent, env,\
         exploration_prob = max(np.exp(-exploration_decreasing_decay*i), min_exploration_prob)
         
         # use the function compute_V_pi_from_Q(env, Q) to compute and plot V and pi
-        if(i%nprint==0):
+        if(i%nprint==0 and i>=nprint):
             print("DQN - Episode %d, J=%.1f, eps=%.1f"%(i,J,100*exploration_prob))
             iaux = int(i/nprint)
             i_fin[iaux]   = i
@@ -170,7 +172,7 @@ if __name__=="__main__":
 
     ### --- Hyper paramaters
     NEPISODES                    = 100       # Number of training episodes
-    NPRINT                       = 10        # print something every NPRINT episodes
+    NPRINT                       = 20        # print something every NPRINT episodes
     MAX_EPISODE_LENGTH           = 100       # Max episode length
     QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
     DISCOUNT                     = 0.99      # Discount factor 
@@ -213,7 +215,7 @@ if __name__=="__main__":
 
         #plot cost
         plt.figure()
-        plt.plot( np.cumsum(h_ctg)/range(1,MAX_EPISODE_LENGTH+1) )
+        plt.plot( np.cumsum(h_ctg)/range(1,NEPISODES+1) )
         plt.title ("Average cost-to-go")
 
     if FLAG == False: #load model
@@ -226,7 +228,7 @@ if __name__=="__main__":
         env.plot_policy(pi, xgrid)
         print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
         
-    X_sim, U_sim = render_greedy_policy(env, agent, EXPLORATION_PROB)
+    X_sim, U_sim = render_greedy_policy(env, agent, EXPLORATION_PROB, None, MAX_EPISODE_LENGTH)
 
     if PLOT_TRAJ:
         time_vec = np.linspace(0.0,MAX_EPISODE_LENGTH*env.pendulum.DT,MAX_EPISODE_LENGTH)

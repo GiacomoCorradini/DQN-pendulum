@@ -38,7 +38,7 @@ class DQNagent:
         """ 
             Create the neural network to represent the Q function
         """
-        inputs     = layers.Input(shape=(self.nx+self.nu,1))          # input
+        inputs     = layers.Input(shape=(1,self.nx+self.nu))          # input
         state_out1 = layers.Dense(16, activation="relu")(inputs)      # hidden layer 1
         state_out2 = layers.Dense(32, activation="relu")(state_out1)  # hidden layer 2
         state_out3 = layers.Dense(64, activation="relu")(state_out2)  # hidden layer 3
@@ -46,7 +46,7 @@ class DQNagent:
         outputs    = layers.Dense(1)(state_out4)                      # output
 
         model      = tf.keras.Model(inputs, outputs)                  # create the NN
-
+        
         return model
 
     def get_action(self, exploration_prob, env, x, EGREEDY):
@@ -59,14 +59,13 @@ class DQNagent:
         # otherwise take a greedy control
         else:
             x = np.array([x]).T
-            u = [np.arange(0,10)]
-            layer = tf.keras.layers.Discretization(num_bins=env.ndu)
-            action_values=np.zeros([env.ndu,env.pendulum.nx+env.pendulum.nu])
+            Q_values=np.zeros([env.ndu])
+
             for i in range(env.ndu):
-                xu = np.array([np.append(np.concatenate(x),i)]).T
-                action_values[i,:] = np.array(self.tf2np(self.Q.predict(xu))).T
-            best_action_index = tf.math.argmin(action_values[:,2])
-            u = env.c2du(self.tf2np(action_values[best_action_index,2]))
+                xu = np.array([[np.append(np.concatenate(x),i)]])
+                Q_values[i] = np.array(self.Q(xu)).T
+            u = np.argmin(Q_values[:])
+            #u = env.c2du(self.tf2np(Q_values[best_action_index]))
         return u
 
     def update(self, xu_batch, cost_batch, xu_next_batch):
