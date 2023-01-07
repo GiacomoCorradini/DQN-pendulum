@@ -62,15 +62,11 @@ class DQNagent:
             u = [np.arange(0,10)]
             layer = tf.keras.layers.Discretization(num_bins=env.ndu)
             action_values=np.zeros([env.ndu,env.pendulum.nx+env.pendulum.nu])
-            print(np.shape(action_values))
             for i in range(env.ndu):
                 xu = np.array([np.append(np.concatenate(x),i)]).T
                 action_values[i,:] = np.array(self.tf2np(self.Q.predict(xu))).T
             best_action_index = tf.math.argmin(action_values[:,2])
-            print('Best action', best_action_index)
-            print(self.tf2np(action_values[best_action_index,2]))
             u = env.c2du(self.tf2np(action_values[best_action_index,2]))
-            print(u)
         return u
 
     def update(self, xu_batch, cost_batch, xu_next_batch):
