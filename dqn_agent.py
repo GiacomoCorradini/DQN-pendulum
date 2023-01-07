@@ -55,13 +55,14 @@ class DQNagent:
         """
         # with probability exploration_prob take a random control input
         if(uniform() < exploration_prob and EGREEDY == True):
-            u = randint(0, env.nu)
+            u = randint(0, env.ndu)
         # otherwise take a greedy control
         else:
-            action_values = self.Q.predict(x)
+            x = np.array([x]).T
+            layer = tf.keras.layers.Discretization(num_bins=env.ndu)
+            action_values = layer(self.Q.predict(x))
             best_action_index = tf.argmin(action_values)
             u = self.tf2np(action_values[best_action_index])
-            env.c2du(u)
         return u
 
     def update(self, xu_batch, cost_batch, xu_next_batch):

@@ -26,11 +26,11 @@ class ReplayBuffer:
         """
         batch = random.choices(self.replay_buffer, k=self.batch_size)
         x_batch, u_batch, cost_batch, x_next_batch, u_next_batch = list(zip(*batch))
-
-        x_batch       = np.concatenate(x_batch, axis=1)
+        
+        x_batch       = np.concatenate([x_batch], axis=1)
         u_batch       = np.asarray(u_batch)
         cost_batch    = np.asarray(cost_batch)
-        x_next_batch  = np.concatenate(x_next_batch, axis=1)
+        x_next_batch  = np.concatenate([x_next_batch], axis=1)
         u_next_batch  = np.asarray(u_next_batch)
 
         xu_batch      = np.reshape(np.append(x_batch, u_batch), (env.pendulum.nx + env.pendulum.nu,self.batch_size))
