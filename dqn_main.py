@@ -118,22 +118,15 @@ def dqn_learning(buffer, agent, env,\
             # store the experience (s,a,r,s',a') in the replay_buffer
             buffer.store_experience(x, u, cost, x_next, u_next)
             
-            if buffer.get_length() > min_buffer and k % c_step == 0:
+            if buffer.get_length() > 0 and k % c_step == 0:
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
-                x_batch, u_batch, cost_batch, x_next_batch, u_next_batch = buffer.sample_batch()
-
+                xu_batch, xu_next_batch, cost_batch = buffer.sample_batch(env)
                 # collect together state and control
-                xu_batch      = np.append(x_batch, u_batch)
-                xu_next_batch = np.append(x_next_batch, u_next_batch)
-
-                print(xu_batch)
 
                 # convert numpy to tensorflow
                 xu_batch      = agent.np2tf(xu_batch)
                 cost_batch    = agent.np2tf(cost_batch)
                 xu_next_batch = agent.np2tf(xu_next_batch)
-
-                print(xu_batch)
 
 
                 # optimizer with SGD
@@ -203,6 +196,8 @@ if __name__=="__main__":
     env = Pendulum_dci(njoint, nd_u)
 
     agent = DQNagent(nx, nu, DISCOUNT, QVALUE_LEARNING_RATE)
+    agent.Q.summary()
+    agent.Q_target.summary()
 
     buffer = ReplayBuffer(CAPACITY_BUFFER, BATCH_SIZE)
 
