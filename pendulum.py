@@ -119,7 +119,7 @@ class Pendulum:
         if x0 is None: 
             q0 = np.pi*(np.random.rand(self.nq)*2-1)
             v0 = np.random.rand(self.nv)*2-1
-            x0 = np.vstack([q0,v0])
+            x0 = np.concatenate([q0,v0])
         assert len(x0)==self.nx
         self.x = x0.copy()
         self.r = 0.0
@@ -161,14 +161,14 @@ class Pendulum:
             pin.computeAllTerms(self.model,self.data,q,v)
             M   = self.data.M
             b   = self.data.nle
-            a   = inv(M)*(u-self.Kf*v-b)
+            a   = np.dot(inv(M),(u-self.Kf*v-b))
             a   = a.reshape(self.nv) + np.random.randn(self.nv)*self.noise_stddev
             self.a = a
 
             q    += (v+0.5*DT*a)*DT
             v    += a*DT
-            cost += (sumsq(q)*5 + 3*sumsq(v))*DT # cost function
-#            cost += (sumsq(q) + 1e-1*sumsq(v) + 1e-3*sumsq(u))*DT # cost function
+            #cost += (sumsq(q)*5 + 3*sumsq(v))*DT # cost function
+            cost += (sumsq(q) + 1e-1*sumsq(v) + 1e-3*sumsq(u))*DT # cost function
 
             if display:
                 self.display(q)
@@ -191,20 +191,26 @@ if __name__=="__main__":
     print("Seed = %d" % RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
 
-    env = Pendulum(1) 
+    env = Pendulum(2) 
 
-    x0 = x = env.reset(np.asarray([[0.],[0.]]))
-    u = 0
+    q0 = np.pi*(np.random.rand(env.nq)*2-1)
+    v0 = np.random.rand(env.nv)*2-1
+    x0 = np.concatenate([q0,v0])
+
+    x0 = x = env.reset(x0)
+    u = np.empty(env.nu)
     cost = []
     X = []
     V = []
     for i in range(100):
-        u += 0.01
-        x,c = env.step([u])
+        u[0] += 0.01
+        if env.nu == 2:
+            u[1] = 0
+        x,c = env.step(u)
         X.append(x[:env.nq])
         V.append(x[env.nq:])
         cost.append(c)
-        env.render()
+        #env.render()
         #print(c)
         #print(x)
     
@@ -212,9 +218,9 @@ if __name__=="__main__":
     plt.plot( np.cumsum(cost)/range(1,100+1) )
     plt.title("cost")
     plt.figure()
-    plt.plot(np.concatenate(X))
+    plt.plot(np.reshape(X,(100,env.nq)))
     plt.title("pos")
     plt.figure()
-    plt.plot(np.concatenate(V))
+    plt.plot(np.reshape(V,(100,env.nq)))
     plt.title("vel")
     plt.show()
