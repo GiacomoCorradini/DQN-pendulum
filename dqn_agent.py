@@ -4,7 +4,7 @@ from tensorflow.python.ops.numpy_ops import np_config
 import numpy as np
 from numpy.random import randint, uniform
 import matplotlib as plt
-from pendulumn_dci import Pendulum_dci
+from pendulum_dci import Pendulum_dci
 
 np_config.enable_numpy_behavior()
 
@@ -13,7 +13,7 @@ class DQNagent:
         DQN agent
     """
 
-    def __init__(self, nx_, nu_, discount = 0.99, q_value_learning_rate = 1e-3):
+    def __init__(self, nx_, nu_, env, discount = 0.99, q_value_learning_rate = 1e-3):
         """
             nx: number of states
             nu: number of control input
@@ -25,6 +25,7 @@ class DQNagent:
         """
         self.nx = nx_
         self.nu = nu_
+        self.ndu = env.ndu
         self.DISCOUNT = discount
         self.QVALUE_LEARNING_RATE = q_value_learning_rate
         self.Q = self.get_critic()
@@ -53,14 +54,13 @@ class DQNagent:
         """
             epsilon-greedy policy
         """
-        self.ndu = env.ndu
         # with probability exploration_prob take a random control input
         if(uniform() < exploration_prob and EGREEDY == True):
             u = randint(0, env.ndu)
         # otherwise take a greedy control
         else:
             x = np.array([x]).T
-            xu = np.reshape([np.append([x]*np.ones(env.ndu),[np.arange(env.ndu)])],(3,1,env.ndu))
+            xu = np.reshape([np.append([x]*np.ones(env.ndu),[np.arange(env.ndu)])],(env.pendulum.nx+1,1,env.ndu))
             u = np.argmin(self.Q(xu.T))
         return u
 

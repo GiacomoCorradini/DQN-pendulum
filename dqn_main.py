@@ -5,7 +5,7 @@ import time
 from numpy.random import rand
 import tensorflow as tf
 
-from pendulumn_dci import Pendulum_dci
+from pendulum_dci import Pendulum_dci
 from dqn_agent import DQNagent
 from replay_buffer import ReplayBuffer
 
@@ -21,7 +21,9 @@ def render_greedy_policy(env, agent, exploration_prob, x0=None, maxiter=100):
     U_sim    = np.zeros(maxiter)                     # store u
     for i in range(maxiter):
         u = agent.get_action(exploration_prob, env, x, False)
-        x,c      = env.step([u])
+        if(env.njoint == 2):
+            x,c      = env.step([u,env.c2du(0)])
+        else:    x,c      = env.step([u])
         costToGo += gamma_i*c
         gamma_i  *= agent.DISCOUNT
         #env.render()
@@ -37,17 +39,26 @@ def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
     DQ     = 2*np.pi/xstep
     DV     = 2*vMax/xstep
     x[0,:] = np.arange(-np.pi,np.pi+DQ, DQ)
-    x[1,:] = np.arange(-vMax, vMax+DV, DV)
+    x[1,:] = np.arange(-vMax,vMax+DV, DV)
 
     pi     = np.empty(shape = (xstep+1,xstep+1))
+    # pi2    = np.empty(shape = (xstep+1,xstep+1))
     V      = np.empty(shape = (xstep+1,xstep+1))
+    # Q      = np.empty(shape = (xstep+1,xstep+1,agent.ndu))
 
     for i in range(np.shape(x)[1]):
         for j in range(np.shape(x)[1]):
             xu = np.reshape([x[0,i]*np.ones(agent.ndu),x[1,j]*np.ones(agent.ndu),np.arange(agent.ndu)],(agent.ndu,1,nx+1))
             V[i,j]   = np.min(agent.tf2np(agent.Q(xu)))
             pi[i,j]  = env.d2cu(np.argmin(agent.tf2np(agent.Q(xu))))
-            
+            # Q[i,j,:] = agent.tf2np(agent.Q(xu))
+            # u_best   = np.where(Q[i,j,:]==V[i,j])[0]
+            # if(u_best[0]>env.c2du(0.0)):
+            #     pi2[i,j] = u_best[-1]
+            # elif(u_best[-1]<env.c2du(0.0)):
+            #     pi2[i,j] = u_best[0]
+            # else:
+            #     pi2[i,j] = u_best[int(u_best.shape[0]/2)]
     return V, pi, x
     
     # pi[x] = np.argmin(Q[x,:])
@@ -55,13 +66,6 @@ def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
         # to ensure simmetry of the policy when multiply control inputs
         # result in the same value. In these cases we prefer the more extreme
         # actions
-    # u_best = np.where(Q[:]==V)[0]
-    # if(u_best[0]>env.c2du(0.0)):
-    #     pi = u_best[-1]
-    # elif(u_best[-1]<env.c2du(0.0)):
-    #     pi = u_best[0]
-    # else:
-    #     pi = u_best[int(u_best.shape[0]/2)]
 
 def dqn_learning(buffer, agent, env,\
                  gamma, nEpisodes, maxEpisodeLength, min_buffer, c_step,\
@@ -92,7 +96,8 @@ def dqn_learning(buffer, agent, env,\
 
     # count the n° of episodes
     ep = 0
-
+    X_sim    = np.zeros([maxEpisodeLength,env.pendulum.nx])   # store x
+    U_sim    = np.zeros(maxEpisodeLength)                     # store u
     # for every episode
     for i in range(nEpisodes):
         # reset the state
@@ -104,12 +109,14 @@ def dqn_learning(buffer, agent, env,\
         for k in range(maxEpisodeLength):
             # state of the enviroment
             x = env.x
-            
+
             # epsilon-greedy action selection
             u = agent.get_action(exploration_prob, env, x, True)
 
             # observe cost and next state (step = calculate dynamics)
-            x_next, cost = env.step([u])
+            if (env.njoint == 2):
+                x_next, cost = env.step([u,env.c2du(0)])
+            else: x_next, cost = env.step([u])
             print(u)
 
             # next control greedy
@@ -117,6 +124,8 @@ def dqn_learning(buffer, agent, env,\
         
             # store the experience (s,a,r,s',a') in the replay_buffer
             buffer.store_experience(x, u, cost, x_next, u_next)
+            X_sim[k,:] = x
+            U_sim[k] = env.d2cu(u)
 
             if buffer.get_length() > 0 and k % c_step == 0:
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
@@ -151,14 +160,45 @@ def dqn_learning(buffer, agent, env,\
             i_fin[iaux]   = i
             J_fin[iaux]   = J
             eps_fin[iaux] = exploration_prob
-            if(plot and env.njoint == 1):
-                V, pi, xgrid = compute_V_pi_from_Q(agent)
-                env.plot_V_table(V, xgrid, iaux)
-                env.plot_policy(pi, xgrid, iaux)
+            if(plot):
+                if(env.njoint == 1):
+                    V, pi, xgrid = compute_V_pi_from_Q(agent)
+                    env.plot_V_table(V, xgrid, iaux)
+                    env.plot_policy(pi, xgrid, iaux)
+                # env.plot_policy(pi2, xgrid, iaux)
+                time_vec = np.linspace(0.0,MAX_EPISODE_LENGTH*env.pendulum.DT,MAX_EPISODE_LENGTH)
+                plt.figure()
+                plt.plot(time_vec, U_sim[:], "b")
+                if env.uMax:
+                    plt.plot(time_vec, env.uMax*np.ones(len(time_vec)), "k--", alpha=0.8, linewidth=1.5)
+                    plt.plot(time_vec, -env.uMax*np.ones(len(time_vec)), "k--", alpha=0.8, linewidth=1.5)
+                plt.gca().set_xlabel('Time [s]')
+                plt.gca().set_ylabel('[Nm]')
+                plt.title ("Torque input")
+            
+                plt.figure()
+                plt.plot(time_vec, X_sim[:,0],'b')
+                if env.njoint == 2:
+                    plt.plot(time_vec, X_sim[:,1],'r')
+                    plt.legend(["1st joint position","2nd joint position"],loc='upper right')
+                plt.gca().set_xlabel('Time [s]')
+                plt.gca().set_ylabel('[rad]')
+                plt.title ("Joint position")
+                
+                plt.figure()
+                if env.njoint == 1:
+                    plt.plot(time_vec, X_sim[:,1],'b')
+                else:
+                    plt.plot(time_vec, X_sim[:,2],'b')
+                    plt.plot(time_vec, X_sim[:,3],'r')
+                    plt.legend(["1st joint velocity","2nd joint velocity"],loc='upper right')
+                plt.gca().set_xlabel('Time [s]')
+                plt.gca().set_ylabel('[rad/s]')
+                plt.title ("Joint velocity")
 
     for i in range(int(nEpisodes/nprint)):
         print("Q learning - Iter %d, J=%.1f, eps=%.1f"%(i_fin[i],J_fin[i],100*eps_fin[i]))
-    
+
     return Q, h_ctg
 
 if __name__=="__main__":
@@ -168,25 +208,25 @@ if __name__=="__main__":
     np.random.seed(RANDOM_SEED)
 
     ### --- Hyper paramaters
-    NEPISODES                    = 100       # Number of training episodes
-    NPRINT                       = 20        # print something every NPRINT episodes
+    NEPISODES                    = 500      # Number of training episodes
+    NPRINT               = NEPISODES/5       # print something every NPRINT episodes
     MAX_EPISODE_LENGTH           = 100       # Max episode length
     QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
     DISCOUNT                     = 0.99      # Discount factor 
     PLOT                         = True      # Plot stuff if True
     PLOT_TRAJ                    = True      # Plot trajectory if True
     EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
-    EXPLORATION_DECREASING_DECAY = 0.02      # exploration decay for exponential decreasing
+    EXPLORATION_DECREASING_DECAY = 0.005     # exploration decay for exponential decreasing
     MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration proba
     CAPACITY_BUFFER              = 1000      # capacity buffer
     BATCH_SIZE                   = 32        # batch size 
     MIN_BUFFER                   = 100       # Start sampling from buffer when have length > MIN_BUFFER
     C_STEP                       = 4         # Every c step update w  
     # ----- Control/State
-    njoint                       = 1         # number of joint
+    njoint                       = 2         # number of joint
     nx                           = 2*njoint  # number of states
     nu                           = 1         # number of control input
-    nd_u                         = 11        # number of discretization steps for the joint torque u
+    nd_u                         = 21        # number of discretization steps for the joint torque u
     nd_x                         = 21        # number of discretization steps for the joint state (for plot)
     # ----- FLAG to TRAIN/LOAD
     FLAG                         = True # False = Load Model
@@ -194,7 +234,7 @@ if __name__=="__main__":
     ### --- Initialize agent, buffer and enviroment
     env = Pendulum_dci(njoint, nd_u)
 
-    agent = DQNagent(nx, nu, DISCOUNT, QVALUE_LEARNING_RATE)
+    agent = DQNagent(nx, nu, env, DISCOUNT, QVALUE_LEARNING_RATE)
     agent.Q.summary()
     agent.Q_target.summary()
 
@@ -223,6 +263,7 @@ if __name__=="__main__":
         V, pi, xgrid = compute_V_pi_from_Q(agent)
         env.plot_V_table(V, xgrid)
         env.plot_policy(pi, xgrid)
+        # env.plot_policy(pi2, xgrid)
         print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
         
     X_sim, U_sim = render_greedy_policy(env, agent, EXPLORATION_PROB, None, MAX_EPISODE_LENGTH)
