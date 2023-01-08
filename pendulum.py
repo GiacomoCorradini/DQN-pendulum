@@ -173,7 +173,7 @@ class Pendulum:
                 self.display(q)
                 time.sleep(1e-4)
 
-        x[:self.nq] = q
+        x[:self.nq] = modulePi(q)
         x[self.nq:] = np.clip(v,-self.vmax,self.vmax) 
         # cost = sumsq(modulePi(q)) +0.1*sumsq(v) + 1e-3*sumsq(u)
 

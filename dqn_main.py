@@ -211,7 +211,7 @@ if __name__=="__main__":
     PLOT                         = True      # Plot stuff if True
     PLOT_TRAJ                    = True      # Plot trajectory if True
     EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
-    EXPLORATION_DECREASING_DECAY = 0.001     # exploration decay for exponential decreasing
+    EXPLORATION_DECREASING_DECAY = 0.01     # exploration decay for exponential decreasing
     MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration proba
     CAPACITY_BUFFER              = 1000      # capacity buffer
     BATCH_SIZE                   = 32        # batch size 
@@ -240,10 +240,16 @@ if __name__=="__main__":
         h_ctg = dqn_learning(buffer, agent, env, DISCOUNT, NEPISODES, MAX_EPISODE_LENGTH, MIN_BUFFER, C_STEP, EXPLORATION_PROB, EXPLORATION_DECREASING_DECAY, MIN_EXPLORATION_PROB, compute_V_pi_from_Q, PLOT, NPRINT)
         
         # save model and weights
-        print("\nTraining finished")
-        agent.Q.save('saved_model/my_model')
-        print("\nSave NN weights to file (in HDF5)")
-        agent.Q.save_weights('saved_model/weight.h5')
+        if (njoint == 1):
+            print("\nTraining finished")
+            agent.Q.save('saved_model/my_model1')
+            print("\nSave NN weights to file (in HDF5)")
+            agent.Q.save_weights('saved_model/weight1.h5')
+        else:    
+            print("\nTraining finished")
+            agent.Q.save('saved_model/my_model2')
+            print("\nSave NN weights to file (in HDF5)")
+            agent.Q.save_weights('saved_model/weight2.h5')
 
         #plot cost
         plt.figure()
@@ -251,7 +257,10 @@ if __name__=="__main__":
         plt.title ("Average cost-to-go")
 
     if FLAG == False: #load model
-        agent.Q = tf.keras.models.load_model('saved_model/my_model')
+        if (njoint == 1):
+            agent.Q = tf.keras.models.load_model('saved_model/my_model1')
+        else:
+            agent.Q = tf.keras.models.load_model('saved_model/my_model2')
         assert(agent.Q)
     
     if (njoint == 1): #plot V, pi for joint 1
