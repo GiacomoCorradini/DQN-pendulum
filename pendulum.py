@@ -210,9 +210,8 @@ if __name__=="__main__":
         X.append(x[:env.nq])
         V.append(x[env.nq:])
         cost.append(c)
-        #env.render()
+        env.render()
     
-    print(U)
     plt.figure()
     plt.plot( np.cumsum(cost)/range(1,100+1) )
     plt.title("cost")
