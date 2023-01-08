@@ -83,9 +83,6 @@ def dqn_learning(buffer, agent, env,\
     '''
     # Keep track of the cost-to-go history (for plot)
     h_ctg      = []
-    i_fin      = np.zeros(int(nEpisodes/nprint))
-    J_fin      = np.zeros(int(nEpisodes/nprint))
-    eps_fin    = np.zeros(int(nEpisodes/nprint))
     # Make a copy of the initial Q table guess
     Q = tf.keras.models.clone_model(agent.Q)
 
@@ -100,6 +97,7 @@ def dqn_learning(buffer, agent, env,\
         J = 0
         ep += 1
         gamma_to_the_i = 1
+        start = time.time()
         # simulate the system for maxEpisodeLength steps
         for k in range(maxEpisodeLength):
             # state of the enviroment
@@ -112,7 +110,6 @@ def dqn_learning(buffer, agent, env,\
             if (env.njoint == 2):
                 x_next, cost = env.step([u,env.c2du(0)])
             else: x_next, cost = env.step([u])
-            print(u)
 
             # next control greedy
             u_next = agent.get_action(exploration_prob, env, x_next, False)
@@ -136,7 +133,7 @@ def dqn_learning(buffer, agent, env,\
                 agent.update(xu_batch, cost_batch, xu_next_batch)
                 
                 # Periodically update target network (period = c_step)
-                agent.update_Q_target()
+                agent.update_Q_target()   
         
             # keep track of the cost to go
             J += gamma_to_the_i * cost
@@ -147,52 +144,49 @@ def dqn_learning(buffer, agent, env,\
 
         # update the exploration probability with an exponential decay: 
         exploration_prob = max(np.exp(-exploration_decreasing_decay*i), min_exploration_prob)
+
+        elapsed_time = round((time.time() - start),3)
+        print("Episode", i, "completed in", elapsed_time, "s - eps =", round(100*exploration_prob,2))
         
         # use the function compute_V_pi_from_Q(env, Q) to compute and plot V and pi
         if(i%nprint==0 and i>=nprint):
             print("DQN - Episode %d, J=%.1f, eps=%.1f"%(i,J,100*exploration_prob))
-            iaux = int(i/nprint)
-            i_fin[iaux]   = i
-            J_fin[iaux]   = J
-            eps_fin[iaux] = exploration_prob
-            if(plot):
-                if(env.njoint == 1):
-                    V, pi, xgrid = compute_V_pi_from_Q(agent)
-                    env.plot_V_table(V, xgrid, iaux)
-                    env.plot_policy(pi, xgrid, iaux)
-                # env.plot_policy(pi2, xgrid, iaux)
-                time_vec = np.linspace(0.0,MAX_EPISODE_LENGTH*env.pendulum.DT,MAX_EPISODE_LENGTH)
-                plt.figure()
-                plt.plot(time_vec, U_sim[:], "b")
-                if env.uMax:
-                    plt.plot(time_vec, env.uMax*np.ones(len(time_vec)), "k--", alpha=0.8, linewidth=1.5)
-                    plt.plot(time_vec, -env.uMax*np.ones(len(time_vec)), "k--", alpha=0.8, linewidth=1.5)
-                plt.gca().set_xlabel('Time [s]')
-                plt.gca().set_ylabel('[Nm]')
-                plt.title ("Torque input")
+     
+            # if(plot):
+            #     if(env.njoint == 1):
+            #         V, pi, xgrid = compute_V_pi_from_Q(agent)
+            #         env.plot_V_table(V, xgrid, iaux)
+            #         env.plot_policy(pi, xgrid, iaux)
+            #     # env.plot_policy(pi2, xgrid, iaux)
+            #     time_vec = np.linspace(0.0,MAX_EPISODE_LENGTH*env.pendulum.DT,MAX_EPISODE_LENGTH)
+            #     plt.figure()
+            #     plt.plot(time_vec, U_sim[:], "b")
+            #     if env.uMax:
+            #         plt.plot(time_vec, env.uMax*np.ones(len(time_vec)), "k--", alpha=0.8, linewidth=1.5)
+            #         plt.plot(time_vec, -env.uMax*np.ones(len(time_vec)), "k--", alpha=0.8, linewidth=1.5)
+            #     plt.gca().set_xlabel('Time [s]')
+            #     plt.gca().set_ylabel('[Nm]')
+            #     plt.title ("Torque input")
             
-                plt.figure()
-                plt.plot(time_vec, X_sim[:,0],'b')
-                if env.njoint == 2:
-                    plt.plot(time_vec, X_sim[:,1],'r')
-                    plt.legend(["1st joint position","2nd joint position"],loc='upper right')
-                plt.gca().set_xlabel('Time [s]')
-                plt.gca().set_ylabel('[rad]')
-                plt.title ("Joint position")
+            #     plt.figure()
+            #     plt.plot(time_vec, X_sim[:,0],'b')
+            #     if env.njoint == 2:
+            #         plt.plot(time_vec, X_sim[:,1],'r')
+            #         plt.legend(["1st joint position","2nd joint position"],loc='upper right')
+            #     plt.gca().set_xlabel('Time [s]')
+            #     plt.gca().set_ylabel('[rad]')
+            #     plt.title ("Joint position")
                 
-                plt.figure()
-                if env.njoint == 1:
-                    plt.plot(time_vec, X_sim[:,1],'b')
-                else:
-                    plt.plot(time_vec, X_sim[:,2],'b')
-                    plt.plot(time_vec, X_sim[:,3],'r')
-                    plt.legend(["1st joint velocity","2nd joint velocity"],loc='upper right')
-                plt.gca().set_xlabel('Time [s]')
-                plt.gca().set_ylabel('[rad/s]')
-                plt.title ("Joint velocity")
-
-    for i in range(int(nEpisodes/nprint)):
-        print("Q learning - Iter %d, J=%.1f, eps=%.1f"%(i_fin[i],J_fin[i],100*eps_fin[i]))
+            #     plt.figure()
+            #     if env.njoint == 1:
+            #         plt.plot(time_vec, X_sim[:,1],'b')
+            #     else:
+            #         plt.plot(time_vec, X_sim[:,2],'b')
+            #         plt.plot(time_vec, X_sim[:,3],'r')
+            #         plt.legend(["1st joint velocity","2nd joint velocity"],loc='upper right')
+            #     plt.gca().set_xlabel('Time [s]')
+            #     plt.gca().set_ylabel('[rad/s]')
+            #     plt.title ("Joint velocity")
 
     return h_ctg
 
@@ -211,7 +205,7 @@ if __name__=="__main__":
     PLOT                         = True      # Plot stuff if True
     PLOT_TRAJ                    = True      # Plot trajectory if True
     EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
-    EXPLORATION_DECREASING_DECAY = 0.01     # exploration decay for exponential decreasing
+    EXPLORATION_DECREASING_DECAY = 0.05      # exploration decay for exponential decreasing
     MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration proba
     CAPACITY_BUFFER              = 1000      # capacity buffer
     BATCH_SIZE                   = 32        # batch size 
