@@ -191,7 +191,7 @@ if __name__=="__main__":
     print("Seed = %d" % RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
 
-    env = Pendulum(1) 
+    env = Pendulum(2) 
 
     x0 = x = env.reset(np.zeros(env.nx))
     u = np.zeros(env.nu)
@@ -200,11 +200,17 @@ if __name__=="__main__":
     V = []
     U = []
     for i in range(100):
-        u[0,] += 0.01
-        if env.nu == 2:
-            u[1] = 0
-            U.append([u[0],u[1]])
-        else:   
+        u[0] += 0.01
+        # if env.nu == 2:
+        #     u[1] = 0
+        #     U.append([u[0],u[1]])
+        # else:   
+        #     U.append(u[0])
+        if env.nu > 1:
+            for i in range(env.nu - 1):
+                u[i+1] = 0
+            U.append([u[k] for k in range(env.nu)])
+        else:
             U.append(u[0])  
         x,c = env.step(u)
         X.append(x[:env.nq])
