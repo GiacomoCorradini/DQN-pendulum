@@ -25,7 +25,7 @@ class DQNagent:
         """
         self.nx = nx_
         self.nu = nu_
-        self.ndu = env.ndu
+        self.env = env
         self.DISCOUNT = discount
         self.QVALUE_LEARNING_RATE = q_value_learning_rate
         self.Q = self.get_critic()
@@ -39,28 +39,28 @@ class DQNagent:
         """ 
             Create the neural network to represent the Q function
         """
-        inputs     = layers.Input(shape=(1,self.nx+self.nu))          # input
+        inputs     = layers.Input(shape=(self.nx))          # input
         state_out1 = layers.Dense(16, activation="relu")(inputs)      # hidden layer 1
         state_out2 = layers.Dense(32, activation="relu")(state_out1)  # hidden layer 2
         state_out3 = layers.Dense(64, activation="relu")(state_out2)  # hidden layer 3
         state_out4 = layers.Dense(64, activation="relu")(state_out3)  # hidden layer 4
-        outputs    = layers.Dense(1)(state_out4)                      # output
+        outputs    = layers.Dense(self.env.ndu)(state_out4)                      # output
 
         model      = tf.keras.Model(inputs, outputs)                  # create the NN
         
         return model
 
-    def get_action(self, exploration_prob, env, x, EGREEDY):
+    def get_action(self, exploration_prob, x, EGREEDY):
         """
             epsilon-greedy policy
         """
         # with probability exploration_prob take a random control input
         if(uniform() < exploration_prob and EGREEDY == True):
-            u = randint(0, env.ndu)
+            u = randint(0, self.env.ndu)
         # otherwise take a greedy control
         else:
             x = np.array([x]).T
-            xu = np.reshape([np.append([x]*np.ones(env.ndu),[np.arange(env.ndu)])],(env.pendulum.nx+1,1,env.ndu))
+            xu = np.reshape([np.append([x]*np.ones(self.env.ndu),[np.arange(self.env.ndu)])],(self.env.pendulum.nx+1,1,self.env.ndu))
             u = np.argmin(self.Q(xu.T))
         return u
 

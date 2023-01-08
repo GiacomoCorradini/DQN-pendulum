@@ -111,7 +111,7 @@ def dqn_learning(buffer, agent, env,\
             x = env.x
 
             # epsilon-greedy action selection
-            u = agent.get_action(exploration_prob, env, x, True)
+            u = agent.get_action(exploration_prob, x, True)
 
             # observe cost and next state (step = calculate dynamics)
             if (env.njoint == 2):
@@ -120,7 +120,7 @@ def dqn_learning(buffer, agent, env,\
             print(u)
 
             # next control greedy
-            u_next = agent.get_action(exploration_prob, env, x_next, False)
+            u_next = agent.get_action(exploration_prob, x_next, False)
         
             # store the experience (s,a,r,s',a') in the replay_buffer
             buffer.store_experience(x, u, cost, x_next, u_next)
