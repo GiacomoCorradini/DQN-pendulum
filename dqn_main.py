@@ -28,7 +28,7 @@ def render_greedy_policy(env, agent, exploration_prob, x0=None, maxiter=100):
         gamma_i  *= agent.DISCOUNT
         #env.render()
         X_sim[i,:] = np.concatenate(np.array([x]).T)
-        U_sim[i] = env.d2cu(u)
+        U_sim[i]   = env.d2cu(u)
     print("Real cost to go of state", x0, ":", costToGo)
     return X_sim, U_sim
 
@@ -60,12 +60,7 @@ def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
             # else:
             #     pi2[i,j] = u_best[int(u_best.shape[0]/2)]
     return V, pi, x
-    
-    # pi[x] = np.argmin(Q[x,:])
-        # Rather than simply using argmin we do something slightly more complex
-        # to ensure simmetry of the policy when multiply control inputs
-        # result in the same value. In these cases we prefer the more extreme
-        # actions
+
 
 def dqn_learning(buffer, agent, env,\
                  gamma, nEpisodes, maxEpisodeLength, min_buffer, c_step,\
@@ -95,7 +90,7 @@ def dqn_learning(buffer, agent, env,\
     Q = tf.keras.models.clone_model(agent.Q)
 
     # count the n° of episodes
-    ep = 0
+    ep       = 0
     X_sim    = np.zeros([maxEpisodeLength,env.pendulum.nx])   # store x
     U_sim    = np.zeros(maxEpisodeLength)                     # store u
     # for every episode
@@ -208,7 +203,7 @@ if __name__=="__main__":
     np.random.seed(RANDOM_SEED)
 
     ### --- Hyper paramaters
-    NEPISODES                    = 500      # Number of training episodes
+    NEPISODES                    = 1000      # Number of training episodes
     NPRINT               = NEPISODES/5       # print something every NPRINT episodes
     MAX_EPISODE_LENGTH           = 100       # Max episode length
     QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
@@ -216,14 +211,14 @@ if __name__=="__main__":
     PLOT                         = True      # Plot stuff if True
     PLOT_TRAJ                    = True      # Plot trajectory if True
     EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
-    EXPLORATION_DECREASING_DECAY = 0.005     # exploration decay for exponential decreasing
+    EXPLORATION_DECREASING_DECAY = 0.001     # exploration decay for exponential decreasing
     MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration proba
     CAPACITY_BUFFER              = 1000      # capacity buffer
     BATCH_SIZE                   = 32        # batch size 
     MIN_BUFFER                   = 100       # Start sampling from buffer when have length > MIN_BUFFER
     C_STEP                       = 4         # Every c step update w  
     # ----- Control/State
-    njoint                       = 2         # number of joint
+    njoint                       = 1         # number of joint
     nx                           = 2*njoint  # number of states
     nu                           = 1         # number of control input
     nd_u                         = 21        # number of discretization steps for the joint torque u
@@ -299,4 +294,6 @@ if __name__=="__main__":
         plt.gca().set_ylabel('[rad/s]')
         plt.title ("Joint velocity")
 
+    plt.figure.max_open_warning = 50
+    
     plt.show()

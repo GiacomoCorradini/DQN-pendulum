@@ -56,12 +56,12 @@ class DQNagent:
         """
         # with probability exploration_prob take a random control input
         if(uniform() < exploration_prob and EGREEDY == True):
-            u = randint(0, env.ndu)
+            u  = randint(0, env.ndu)
         # otherwise take a greedy control
         else:
-            x = np.array([x]).T
+            x  = np.array([x]).T
             xu = np.reshape([np.append([x]*np.ones(env.ndu),[np.arange(env.ndu)])],(env.pendulum.nx+1,1,env.ndu))
-            u = np.argmin(self.Q(xu.T))
+            u  = np.argmin(self.Q(xu.T))
         return u
 
     def update(self, xu_batch, cost_batch, xu_next_batch):
@@ -75,7 +75,7 @@ class DQNagent:
             # Tensors can be manually watched by invoking the watch method on this context manager.
             target_values = self.Q_target(xu_next_batch, training=True)   
             # Compute 1-step targets for the critic loss
-            y = cost_batch + self.DISCOUNT*target_values                            
+            y = cost_batch + self.DISCOUNT*target_values                      
             # Compute batch of Values associated to the sampled batch of states
             Q_value = self.Q(xu_batch, training=True)                         
             # Critic's loss function. tf.math.reduce_mean() computes the mean of elements across dimensions of a tensor

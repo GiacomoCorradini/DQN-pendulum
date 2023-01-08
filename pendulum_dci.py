@@ -78,7 +78,7 @@ if __name__=="__main__":
     print("Seed = %d" % RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
 
-    env = Pendulum_dci(2)   
+    env = Pendulum_dci(1)   
 
     x0 = x = env.reset()
     u = np.zeros(env.pendulum.nu)
