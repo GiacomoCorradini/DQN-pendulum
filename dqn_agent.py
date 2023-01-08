@@ -53,19 +53,15 @@ class DQNagent:
         """
             epsilon-greedy policy
         """
+        self.ndu = env.ndu
         # with probability exploration_prob take a random control input
         if(uniform() < exploration_prob and EGREEDY == True):
             u = randint(0, env.ndu)
         # otherwise take a greedy control
         else:
             x = np.array([x]).T
-            Q_values=np.zeros([env.ndu])
-
-            for i in range(env.ndu):
-                xu = np.array([[np.append(np.concatenate(x),i)]])
-                Q_values[i] = np.array(self.Q(xu)).T
-            u = np.argmin(Q_values[:])
-            #u = env.c2du(self.tf2np(Q_values[best_action_index]))
+            xu = np.reshape([np.append([x]*np.ones(env.ndu),[np.arange(env.ndu)])],(3,1,env.ndu))
+            u = np.argmin(self.Q(xu.T))
         return u
 
     def update(self, xu_batch, cost_batch, xu_next_batch):

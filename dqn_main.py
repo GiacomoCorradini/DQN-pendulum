@@ -41,16 +41,13 @@ def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
 
     pi     = np.empty(shape = (xstep+1,xstep+1))
     V      = np.empty(shape = (xstep+1,xstep+1))
-    Q = []
 
     for i in range(np.shape(x)[1]):
         for j in range(np.shape(x)[1]):
-            xu = np.reshape([x[0,i]*np.ones(10),x[1,j]*np.ones(10),np.arange(10)],(10,1,3))
-            Q        = np.min(agent.tf2np(agent.Q(xu)))
-            u        = np.argmin(Q[:,i,j])
-            pi[i,j]  = agent.tf2np(Q[u])
-            V[i,j]   = Q
-
+            xu = np.reshape([x[0,i]*np.ones(agent.ndu),x[1,j]*np.ones(agent.ndu),np.arange(agent.ndu)],(agent.ndu,1,nx+1))
+            V[i,j]   = np.min(agent.tf2np(agent.Q(xu)))
+            pi[i,j]  = env.d2cu(np.argmin(agent.tf2np(agent.Q(xu))))
+            
     return V, pi, x
     
     # pi[x] = np.argmin(Q[x,:])
@@ -121,10 +118,10 @@ def dqn_learning(buffer, agent, env,\
             # store the experience (s,a,r,s',a') in the replay_buffer
             buffer.store_experience(x, u, cost, x_next, u_next)
 
-            if buffer.get_length() > min_buffer and k % c_step == 0:
+            if buffer.get_length() > 0 and k % c_step == 0:
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
-                xu_batch, xu_next_batch, cost_batch = buffer.sample_batch(env)
                 # collect together state and control
+                xu_batch, xu_next_batch, cost_batch = buffer.sample_batch(env)
 
                 # convert numpy to tensorflow
                 xu_batch      = agent.np2tf(xu_batch)
