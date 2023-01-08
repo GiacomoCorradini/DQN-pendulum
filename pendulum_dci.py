@@ -46,7 +46,6 @@ class Pendulum_dci:
 
     def render(self):
         self.pendulum.render()
-        self.pendulum.display(np.array([self.x[0],]))
         time.sleep(self.pendulum.DT)
     
     def plot_V_table(self, V, x, i=0):
@@ -80,9 +79,8 @@ if __name__=="__main__":
 
     env = Pendulum_dci(2)   
 
-    x0 = x = env.reset()
+    x0 = x = env.reset(np.zeros(env.pendulum.nx))
     u = np.zeros(env.pendulum.nu)
-    uaux = np.zeros(env.pendulum.nu)
 
     cost = []
     X = []
@@ -91,20 +89,18 @@ if __name__=="__main__":
 
     for i in range(100):
         u[0] += 0.01
-        if env.pendulum.nu == 2:
-            u[1] = 0
-            U.append([u[0],u[1]])
-            uaux[1] = u[1]
-        else:   
-            U.append(u[0])
-        uaux[0] = env.c2du(u[0])
-        x,c = env.step(uaux)
-        cost.append(c)
+        if env.pendulum.nu > 1:
+            for i in range(env.pendulum.nu - 1):
+                u[i+1] = 0
+            U.append([u[k] for k in range(env.pendulum.nu)])
+        else:
+            U.append(u[0])  
+        x,c = env.step(u)
         X.append(x[:env.pendulum.nq])
         V.append(x[env.pendulum.nq:])
-        #env.render()
-    print(x)
-    print(env.d2cu(0), env.d2cu(10), env.d2cu(5))
+        cost.append(c)
+        env.render()
+
         
     plt.figure()
     plt.plot( np.cumsum(cost)/range(1,100+1) )

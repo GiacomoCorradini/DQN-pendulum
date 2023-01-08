@@ -199,11 +199,6 @@ if __name__=="__main__":
     U = []
     for i in range(100):
         u[0] += 0.01
-        # if env.nu == 2:
-        #     u[1] = 0
-        #     U.append([u[0],u[1]])
-        # else:   
-        #     U.append(u[0])
         if env.nu > 1:
             for i in range(env.nu - 1):
                 u[i+1] = 0
