@@ -32,7 +32,7 @@ class ReplayBuffer:
         cost_batch    = np.asarray(cost_batch)
         x_next_batch  = np.concatenate([x_next_batch], axis=1).T
 
-        return x_batch, x_next_batch, cost_batch
+        return x_batch, x_next_batch, cost_batch, u_batch
 
     def get_length(self):
         return len(self.replay_buffer)

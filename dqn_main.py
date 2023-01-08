@@ -133,7 +133,7 @@ def dqn_learning(buffer, agent, env, control_map,\
             if buffer.get_length() > min_buffer and k % c_step == 0:
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
                 # collect together state and control
-                xu_batch, xu_next_batch, cost_batch = buffer.sample_batch()
+                xu_batch, xu_next_batch, cost_batch, u_batch = buffer.sample_batch()
 
                 # convert numpy to tensorflow
                 xu_batch      = agent.np2tf(xu_batch)

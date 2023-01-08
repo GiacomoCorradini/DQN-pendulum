@@ -74,12 +74,14 @@ class DQNagent:
             # Trainable variables (created by tf.Variable or tf.compat.v1.get_variable, where trainable=True is default in both cases) are automatically watched. 
             # Tensors can be manually watched by invoking the watch method on this context manager.
             target_values = self.Q_target(xu_next_batch, training=True)
-            print(target_values)   
             # Compute 1-step targets for the critic loss
             y = cost_batch + self.DISCOUNT*target_values                            
+            # y = cost_batch + self.DISCOUNT*np.min(target_values)                            
             # Compute batch of Values associated to the sampled batch of states
             Q_value = self.Q(xu_batch, training=True)
-            print(Q_value)                        
+            # Q_value = self.Q(xu_batch, training=True)[0][control]
+            #Q_value = self.Q(xu_batch, training=True)
+            #print(Q_value)
             # Critic's loss function. tf.math.reduce_mean() computes the mean of elements across dimensions of a tensor
             Q_loss = tf.math.reduce_mean(tf.math.square(y - Q_value))
         # Compute the gradients of the critic loss w.r.t. critic's parameters (weights and biases)
