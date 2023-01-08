@@ -108,20 +108,13 @@ class DQNagent:
 
 if __name__=="__main__":
 
-    agent = DQNagent(2,1)
     env = Pendulum_dci(1)
+    agent = DQNagent(2,1, env)
 
     env.reset()
-
-    print("x")
-    print(env.x)
     u = agent.get_action(1, env, env.x, False)
     
     x_next, cost = env.step(u)
-
-    print("x_next")
-    print(x_next)
-    u_next = agent.get_action(1, env, x_next, False)
 
     agent.Q.summary()
     agent.Q_target.summary()
