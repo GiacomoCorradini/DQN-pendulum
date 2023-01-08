@@ -48,9 +48,9 @@ def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
 
     for i in range(np.shape(x)[1]):
         for j in range(np.shape(x)[1]):
-            xu = np.reshape([x[0,i]*np.ones(agent.ndu),x[1,j]*np.ones(agent.ndu),np.arange(agent.ndu)],(agent.ndu,1,nx+1))
-            V[i,j]   = np.min(agent.tf2np(agent.Q(xu)))
-            pi[i,j]  = env.d2cu(np.argmin(agent.tf2np(agent.Q(xu))))
+            xu = np.reshape([x[0,i]*np.ones(agent.ndu),x[1,j]*np.ones(agent.ndu),np.arange(agent.ndu)],(nx+1,agent.ndu))
+            V[i,j]   = np.min(agent.Q(xu.T))
+            pi[i,j]  = np.argmin(agent.Q(xu.T))
             # Q[i,j,:] = agent.tf2np(agent.Q(xu))
             # u_best   = np.where(Q[i,j,:]==V[i,j])[0]
             # if(u_best[0]>env.c2du(0.0)):
@@ -194,7 +194,7 @@ def dqn_learning(buffer, agent, env,\
     for i in range(int(nEpisodes/nprint)):
         print("Q learning - Iter %d, J=%.1f, eps=%.1f"%(i_fin[i],J_fin[i],100*eps_fin[i]))
 
-    return Q, h_ctg
+    return h_ctg
 
 if __name__=="__main__":
     ### --- Random seed
@@ -203,7 +203,7 @@ if __name__=="__main__":
     np.random.seed(RANDOM_SEED)
 
     ### --- Hyper paramaters
-    NEPISODES                    = 1000      # Number of training episodes
+    NEPISODES                    = 500       # Number of training episodes
     NPRINT               = NEPISODES/5       # print something every NPRINT episodes
     MAX_EPISODE_LENGTH           = 100       # Max episode length
     QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
@@ -237,7 +237,7 @@ if __name__=="__main__":
 
     if FLAG == True:
 
-        agent.Q, h_ctg = dqn_learning(buffer, agent, env, DISCOUNT, NEPISODES, MAX_EPISODE_LENGTH, MIN_BUFFER, C_STEP, EXPLORATION_PROB, EXPLORATION_DECREASING_DECAY, MIN_EXPLORATION_PROB, compute_V_pi_from_Q, PLOT, NPRINT)
+        h_ctg = dqn_learning(buffer, agent, env, DISCOUNT, NEPISODES, MAX_EPISODE_LENGTH, MIN_BUFFER, C_STEP, EXPLORATION_PROB, EXPLORATION_DECREASING_DECAY, MIN_EXPLORATION_PROB, compute_V_pi_from_Q, PLOT, NPRINT)
         
         # save model and weights
         print("\nTraining finished")
