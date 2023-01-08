@@ -39,18 +39,19 @@ class DQNagent:
         """ 
             Create the neural network to represent the Q function
         """
-        inputs     = layers.Input(shape=(self.nx))          # input
+        inputs     = layers.Input(shape=(self.nx))                    # input
         state_out1 = layers.Dense(16, activation="relu")(inputs)      # hidden layer 1
         state_out2 = layers.Dense(32, activation="relu")(state_out1)  # hidden layer 2
         state_out3 = layers.Dense(64, activation="relu")(state_out2)  # hidden layer 3
         state_out4 = layers.Dense(64, activation="relu")(state_out3)  # hidden layer 4
-        outputs    = layers.Dense(self.env.ndu)(state_out4)                      # output
+        outputs    = layers.Dense(self.env.ndu)(state_out4)           # output
 
         model      = tf.keras.Model(inputs, outputs)                  # create the NN
         
         return model
 
-    def get_action(self, exploration_prob, x, EGREEDY):
+    # TO DO GREEDY CONTROL
+    def get_action(self, exploration_prob, x, EGREEDY, control_map):
         """
             epsilon-greedy policy
         """
@@ -59,9 +60,8 @@ class DQNagent:
             u = randint(0, self.env.ndu)
         # otherwise take a greedy control
         else:
-            x = np.array([x]).T
-            xu = np.reshape([np.append([x]*np.ones(self.env.ndu),[np.arange(self.env.ndu)])],(self.env.pendulum.nx+1,1,self.env.ndu))
-            u = np.argmin(self.Q(xu.T))
+            x_state = np.concatenate([self.np2tf(x)], axis=1).T
+            u = np.array([control_map[np.argmin(self.Q.predict(x_state))]])
         return u
 
     def update(self, xu_batch, cost_batch, xu_next_batch):
@@ -73,11 +73,13 @@ class DQNagent:
             # Operations are recorded if they are executed within this context manager and at least one of their inputs is being "watched".
             # Trainable variables (created by tf.Variable or tf.compat.v1.get_variable, where trainable=True is default in both cases) are automatically watched. 
             # Tensors can be manually watched by invoking the watch method on this context manager.
-            target_values = self.Q_target(xu_next_batch, training=True)   
+            target_values = self.Q_target(xu_next_batch, training=True)
+            print(target_values)   
             # Compute 1-step targets for the critic loss
             y = cost_batch + self.DISCOUNT*target_values                            
             # Compute batch of Values associated to the sampled batch of states
-            Q_value = self.Q(xu_batch, training=True)                         
+            Q_value = self.Q(xu_batch, training=True)
+            print(Q_value)                        
             # Critic's loss function. tf.math.reduce_mean() computes the mean of elements across dimensions of a tensor
             Q_loss = tf.math.reduce_mean(tf.math.square(y - Q_value))
         # Compute the gradients of the critic loss w.r.t. critic's parameters (weights and biases)

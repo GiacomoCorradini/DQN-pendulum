@@ -36,3 +36,31 @@ class ReplayBuffer:
 
     def get_length(self):
         return len(self.replay_buffer)
+
+from pendulum_dci import Pendulum_dci
+
+if __name__=="__main__":
+
+    env = Pendulum_dci()
+    buffer = ReplayBuffer()
+
+    env.reset()
+
+    for k in range(100):
+        # state of the enviroment
+        x = env.x
+
+        # epsilon-greedy action selection
+        u = 0.1 * k
+
+        # observe cost and next state (step = calculate dynamics)
+        x_next, cost = env.step([u])
+    
+        # store the experience (s,a,r,s',a') in the replay_buffer
+        buffer.store_experience(x, u, cost, x_next)
+
+        xu_batch, xu_next_batch, cost_batch = buffer.sample_batch()
+
+        print(xu_batch, xu_next_batch, cost_batch)
+
+    print(buffer.get_length())
