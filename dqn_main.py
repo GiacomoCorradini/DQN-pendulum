@@ -78,6 +78,7 @@ def dqn_learning(buffer, agent, env,\
     h_ctg    = []
     X_sim    = np.zeros([maxEpisodeLength,env.pendulum.nx])
     U_sim    = np.zeros(maxEpisodeLength)
+    Cost_sim    = np.zeros(maxEpisodeLength)
     
     # for every episode
     for i in range(nEpisodes):
@@ -139,7 +140,7 @@ def dqn_learning(buffer, agent, env,\
         
         # use the function compute_V_pi_from_Q(env, Q) to compute and plot V and pi
         if(i%nprint==0 and i>=nprint):
-            X_sim, U_sim, _ = render_greedy_policy(env, agent, exploration_prob)
+            X_sim, U_sim, Cost_sim = render_greedy_policy(env, agent, exploration_prob)
             if(plot):
                 # if(env.njoint == 1):
                 #     V, pi, xgrid = compute_V_pi_from_Q(env.d2cu,agent)
