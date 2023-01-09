@@ -35,9 +35,11 @@ def render_greedy_policy(env, agent, exploration_prob, x0=None, maxiter=100):
     print("Real cost to go of state", x0, ":", costToGo)
     return X_sim, U_sim, Cost_sim
 
-def compute_V_pi_from_Q(d2cu, agent, vMax=5, xstep=20, nx=2):
+def compute_V_pi_from_Q(d2cu, agent, env, xstep=20):
     ''' Compute Value table and greedy policy pi from Q table. '''
 
+    vMax   = env.vMax  
+    nx     = env.pendulum.nx
     x      = np.empty(shape = (nx,xstep+1))
     DQ     = 2*np.pi/xstep
     DV     = 2*vMax/xstep
@@ -159,22 +161,22 @@ if __name__=="__main__":
     np.random.seed(RANDOM_SEED)
 
     ### --- Hyper paramaters
-    NEPISODES                    = 500       # Number of training episodes
+    NEPISODES                    = 1500       # Number of training episodes
     NPRINT               = NEPISODES/5       # print something every NPRINT episodes
     MAX_EPISODE_LENGTH           = 100       # Max episode length
     QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
-    DISCOUNT                     = 0.99      # Discount factor 
+    DISCOUNT                     = 0.99       # Discount factor 
     PLOT                         = True      # Plot stuff if True
     PLOT_TRAJ                    = True      # Plot trajectory if True
     EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
-    EXPLORATION_DECREASING_DECAY = 0.05      # exploration decay for exponential decreasing
-    MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration proba
+    EXPLORATION_DECREASING_DECAY = -np.log(1e-5)/NEPISODES     # exploration decay for exponential decreasing
+    MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration probability
     CAPACITY_BUFFER              = 1000      # capacity buffer
     BATCH_SIZE                   = 32        # batch size 
     MIN_BUFFER                   = 100       # Start sampling from buffer when have length > MIN_BUFFER
     C_STEP                       = 4         # Every c step update w  
     # ----- Control/State
-    njoint                       = 2         # number of joint
+    njoint                       = 1         # number of joint
     nx                           = 2*njoint  # number of states
     nu                           = 1         # number of control input
     nd_u                         = 21        # number of discretization steps for the joint torque u
@@ -219,7 +221,7 @@ if __name__=="__main__":
         assert(agent.Q)
     
     if (njoint == 1): #plot V, pi for joint 1
-        V, pi, xgrid = compute_V_pi_from_Q(env.d2cu,agent)
+        V, pi, xgrid = compute_V_pi_from_Q(env.d2cu,agent, env)
         env.plot_V_table(V, xgrid)
         env.plot_policy(pi, xgrid)
         print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
