@@ -141,7 +141,7 @@ def dqn_learning(buffer, agent, env,\
         
         # use the function compute_V_pi_from_Q(env, Q) to compute and plot V and pi
         if(i%nprint==0 and i>=nprint):
-            X_sim, U_sim, Cost_sim = render_greedy_policy(env, agent, exploration_prob)
+            X_sim, U_sim, Cost_sim = render_greedy_policy(env, agent, exploration_prob, None, maxEpisodeLength)
             if(plot):
                 # if(env.njoint == 1):
                 #     V, pi, xgrid = compute_V_pi_from_Q(env.d2cu,agent)

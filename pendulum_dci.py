@@ -12,21 +12,21 @@ class Pendulum_dci:
         Guassian noise can be added in the dynamics. 
         Cost is -1 if the goal state has been reached, zero otherwise.
     '''
-    def __init__(self, n_joint = 1, ndu=11, vMax=8, uMax=5, dt=5e-2, ndt=1, noise_stddev=0):
+    def __init__(self, n_joint = 1, ndu=11, vMax=8, uMax=2, dt=5e-2, ndt=1, noise_stddev=0):
         self.njoint       = n_joint
         self.pendulum     = Pendulum(n_joint,noise_stddev, vMax, uMax)
-        self.pendulum.DT  = dt         # Time step length
-        self.pendulum.NDT = ndt        # Number of Euler steps per integration (internal)
-        self.ndu          = ndu         # Number of discretization steps for joint torque
-                                       # the value above must be odd
-        self.vMax         = vMax       # Max velocity (v in [-vmax,vmax])
-        self.uMax         = uMax       # Max torque (u in [-umax,umax])
-        self.dt           = dt         # time step
-        self.DU           = 2*uMax/ndu  # discretization resolution for joint torque
+        self.pendulum.DT  = dt              # Time step length
+        self.pendulum.NDT = ndt             # Number of Euler steps per integration (internal)
+        self.ndu          = ndu             # Number of discretization steps for joint torque
+                                            # the value above must be odd
+        self.vMax         = vMax            # Max velocity (v in [-vmax,vmax])
+        self.uMax         = uMax            # Max torque (u in [-umax,umax])
+        self.dt           = dt              # time step
+        self.DU           = 2*uMax/(ndu-1)  # discretization resolution for joint torque
 
 
     def c2du(self, u):
-        u = np.clip(u,-self.uMax+1e-3,self.uMax-1e-3)
+        u = np.clip(u,-self.uMax,self.uMax)
         return int(np.floor((u+self.uMax)/self.DU))
 
     def d2cu(self, iu):
