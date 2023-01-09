@@ -176,6 +176,7 @@ class Pendulum:
         x[:self.nq] = modulePi(q)
         x[self.nq:] = np.clip(v,-self.vmax,self.vmax) 
 
+            cost -= 5
         return x,cost
      
     def render(self):
