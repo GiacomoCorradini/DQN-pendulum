@@ -4,7 +4,7 @@ from tensorflow.python.ops.numpy_ops import np_config
 import numpy as np
 from numpy.random import randint, uniform
 import matplotlib as plt
-from pendulumn_dci import Pendulum_dci
+from pendulum_dci import Pendulum_dci
 
 np_config.enable_numpy_behavior()
 
@@ -13,7 +13,7 @@ class DQNagent:
         DQN agent
     """
 
-    def __init__(self, nx_, nu_, discount = 0.99, q_value_learning_rate = 1e-3):
+    def __init__(self, nx_, nu_, env, discount = 0.99, q_value_learning_rate = 1e-3):
         """
             nx: number of states
             nu: number of control input
@@ -25,6 +25,7 @@ class DQNagent:
         """
         self.nx = nx_
         self.nu = nu_
+        self.ndu = env.ndu
         self.DISCOUNT = discount
         self.QVALUE_LEARNING_RATE = q_value_learning_rate
         self.Q = self.get_critic()
@@ -38,7 +39,7 @@ class DQNagent:
         """ 
             Create the neural network to represent the Q function
         """
-        inputs     = layers.Input(shape=(self.nx+self.nu,1))          # input
+        inputs     = layers.Input(shape=(self.nx+self.nu))          # input
         state_out1 = layers.Dense(16, activation="relu")(inputs)      # hidden layer 1
         state_out2 = layers.Dense(32, activation="relu")(state_out1)  # hidden layer 2
         state_out3 = layers.Dense(64, activation="relu")(state_out2)  # hidden layer 3
@@ -46,7 +47,7 @@ class DQNagent:
         outputs    = layers.Dense(1)(state_out4)                      # output
 
         model      = tf.keras.Model(inputs, outputs)                  # create the NN
-
+        
         return model
 
     def get_action(self, exploration_prob, env, x, EGREEDY):
@@ -55,18 +56,12 @@ class DQNagent:
         """
         # with probability exploration_prob take a random control input
         if(uniform() < exploration_prob and EGREEDY == True):
-            u = randint(0, env.ndu)
+            u  = randint(0, env.ndu)
         # otherwise take a greedy control
         else:
-            x = np.array([x]).T
-            u = [np.arange(0,10)]
-            layer = tf.keras.layers.Discretization(num_bins=env.ndu)
-            action_values=np.zeros([env.ndu,env.pendulum.nx+env.pendulum.nu])
-            for i in range(env.ndu):
-                xu = np.array([np.append(np.concatenate(x),i)]).T
-                action_values[i,:] = np.array(self.tf2np(self.Q.predict(xu))).T
-            best_action_index = tf.math.argmin(action_values[:,2])
-            u = env.c2du(self.tf2np(action_values[best_action_index,2]))
+            x  = np.array([x]).T
+            xu = np.reshape([np.append([x]*np.ones(env.ndu),[np.arange(env.ndu)])],(env.pendulum.nx+1,env.ndu))
+            u  = np.argmin((self.Q(xu.T)))
         return u
 
     def update(self, xu_batch, cost_batch, xu_next_batch):
@@ -80,7 +75,7 @@ class DQNagent:
             # Tensors can be manually watched by invoking the watch method on this context manager.
             target_values = self.Q_target(xu_next_batch, training=True)   
             # Compute 1-step targets for the critic loss
-            y = cost_batch + self.DISCOUNT*target_values                            
+            y = cost_batch + self.DISCOUNT*target_values                      
             # Compute batch of Values associated to the sampled batch of states
             Q_value = self.Q(xu_batch, training=True)                         
             # Critic's loss function. tf.math.reduce_mean() computes the mean of elements across dimensions of a tensor

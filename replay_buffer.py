@@ -33,9 +33,9 @@ class ReplayBuffer:
         x_next_batch  = np.concatenate([x_next_batch], axis=1).T
         u_next_batch  = np.asarray(u_next_batch)
 
-        xu_batch      = np.reshape(np.append(x_batch, u_batch), (env.pendulum.nx + env.pendulum.nu,self.batch_size))
-        xu_next_batch = np.reshape(np.append(x_next_batch, u_next_batch),(env.pendulum.nx + env.pendulum.nu,self.batch_size))
-        cost_batch    = np.reshape(cost_batch, (1,self.batch_size))
+        xu_batch      = np.reshape(np.append(x_batch, u_batch), (env.pendulum.nx + 1,self.batch_size))
+        xu_next_batch = np.reshape(np.append(x_next_batch, u_next_batch),(env.pendulum.nx + 1,self.batch_size))
+        cost_batch    = np.reshape(cost_batch, (self.batch_size))
 
         return xu_batch, xu_next_batch, cost_batch
 

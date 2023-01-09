@@ -46,7 +46,7 @@ class Pendulum:
     an object Visual (see above).    
     '''
 
-    def __init__(self, nbJoint=1, noise_stddev=0.0):
+    def __init__(self, nbJoint=1, noise_stddev=0.0, vmax=8.0, umax=2.0):
         '''Create a Pinocchio model of a N-pendulum, with N the argument <nbJoint>.'''
         self.viewer     = Display()
         self.visuals    = []
@@ -60,8 +60,8 @@ class Pendulum:
         self.DT         = 5e-2   # Time step length
         self.NDT        = 1      # Number of Euler steps per integration (internal)
         self.Kf         = .10    # Friction coefficient
-        self.vmax       = 8.0    # Max velocity (clipped if larger)
-        self.umax       = 2.0    # Max torque   (clipped if larger)
+        self.vmax       = vmax   # Max velocity (clipped if larger)
+        self.umax       = umax   # Max torque   (clipped if larger)
         self.withSinCos = False  # If true, state is [cos(q),sin(q),qdot], else [q,qdot]
 
     def createPendulum(self, nbJoint, rootId=0, prefix='', jointPlacement=None):
@@ -167,16 +167,16 @@ class Pendulum:
 
             q    += (v+0.5*DT*a)*DT
             v    += a*DT
-            #cost += (sumsq(q)*5 + 3*sumsq(v))*DT # cost function
-            cost += (sumsq(q/(2*np.pi)) + 1e-1*sumsq(v/(2*self.vmax)) + 1e-3*sumsq(u/(2*self.umax)))*DT # cost function
+            cost += (sumsq(q) + 1e-1*sumsq(v) + 1e-3*sumsq(u))*DT # cost function
 
             if display:
                 self.display(q)
                 time.sleep(1e-4)
 
         x[:self.nq] = modulePi(q)
-        x[self.nq:] = np.clip(v,-self.vmax,self.vmax)
-        
+        x[self.nq:] = np.clip(v,-self.vmax,self.vmax) 
+        # cost = sumsq(modulePi(q)) +0.1*sumsq(v) + 1e-3*sumsq(u)
+
         return x,cost
      
     def render(self):
@@ -191,7 +191,7 @@ if __name__=="__main__":
     print("Seed = %d" % RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
 
-    env = Pendulum(2) 
+    env = Pendulum(1) 
 
     x0 = x = env.reset(np.zeros(env.nx))
     u = np.zeros(env.nu)
@@ -210,7 +210,7 @@ if __name__=="__main__":
         X.append(x[:env.nq])
         V.append(x[env.nq:])
         cost.append(c)
-        env.render()
+        #env.render()
     
     print(U)
     plt.figure()
