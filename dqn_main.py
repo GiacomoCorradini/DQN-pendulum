@@ -173,7 +173,7 @@ if __name__=="__main__":
     MIN_BUFFER                   = 100       # Start sampling from buffer when have length > MIN_BUFFER
     C_STEP                       = 4         # Every c step update w  
     # ----- Control/State
-    njoint                       = 1         # number of joint
+    njoint                       = 2         # number of joint
     nx                           = 2*njoint  # number of states
     nu                           = 1         # number of control input
     nd_u                         = 21        # number of discretization steps for the joint torque u
