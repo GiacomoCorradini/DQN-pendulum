@@ -175,7 +175,6 @@ class Pendulum:
 
         x[:self.nq] = modulePi(q)
         x[self.nq:] = np.clip(v,-self.vmax,self.vmax) 
-        # cost = sumsq(modulePi(q)) +0.1*sumsq(v) + 1e-3*sumsq(u)
 
         return x,cost
      
@@ -191,7 +190,7 @@ if __name__=="__main__":
     print("Seed = %d" % RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
 
-    env = Pendulum(1) 
+    env = Pendulum(2) 
 
     x0 = x = env.reset(np.zeros(env.nx))
     u = np.zeros(env.nu)
@@ -200,19 +199,19 @@ if __name__=="__main__":
     V = []
     U = []
     for i in range(100):
-        u[0,] += 0.01
-        if env.nu == 2:
-            u[1] = 0
-            U.append([u[0],u[1]])
-        else:   
+        u[0] += 0.0
+        if env.nu > 1:
+            for i in range(env.nu - 1):
+                u[i+1] = 0.01
+            U.append([u[k] for k in range(env.nu)])
+        else:
             U.append(u[0])  
         x,c = env.step(u)
         X.append(x[:env.nq])
         V.append(x[env.nq:])
         cost.append(c)
-        #env.render()
+        env.render()
     
-    print(U)
     plt.figure()
     plt.plot( np.cumsum(cost)/range(1,100+1) )
     plt.title("cost")
