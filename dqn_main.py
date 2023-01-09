@@ -146,7 +146,7 @@ def dqn_learning(buffer, agent, env,\
                 #     V, pi, xgrid = compute_V_pi_from_Q(env.d2cu,agent)
                 #     env.plot_V_table(V, xgrid)
                 #     env.plot_policy(pi, xgrid)
-                time_vec = np.linspace(0.0,MAX_EPISODE_LENGTH*env.pendulum.DT,MAX_EPISODE_LENGTH)
+                time_vec = np.linspace(0.0,maxEpisodeLength*env.pendulum.DT,maxEpisodeLength)
                 plot_traj(time_vec, X_sim, U_sim, Cost_sim, env)
 
     return h_ctg
@@ -176,7 +176,7 @@ if __name__=="__main__":
     njoint                       = 1         # number of joint
     nx                           = 2*njoint  # number of states
     nu                           = 1         # number of control input
-    nd_u                         = 11        # number of discretization steps for the joint torque u
+    nd_u                         = 21        # number of discretization steps for the joint torque u
     nd_x                         = 21        # number of discretization steps for the joint state (for plot)
     # ----- FLAG to TRAIN/LOAD
     FLAG                         = True # False = Load Model
@@ -193,17 +193,16 @@ if __name__=="__main__":
     if FLAG == True:
 
         h_ctg = dqn_learning(buffer, agent, env, DISCOUNT, NEPISODES, MAX_EPISODE_LENGTH, MIN_BUFFER, C_STEP, EXPLORATION_PROB, EXPLORATION_DECREASING_DECAY, MIN_EXPLORATION_PROB, plot_traj, PLOT, NPRINT)
-        
+        plt.show()
+
         # save model and weights
+        print("\nTraining finished")
+        print("\nSave NN weights to file (in HDF5)")
         if (njoint == 1):
-            print("\nTraining finished")
             agent.Q.save('saved_model/my_model1')
-            print("\nSave NN weights to file (in HDF5)")
             agent.Q.save_weights('saved_model/weight1.h5')
         else:    
-            print("\nTraining finished")
             agent.Q.save('saved_model/my_model2')
-            print("\nSave NN weights to file (in HDF5)")
             agent.Q.save_weights('saved_model/weight2.h5')
 
         #plot cost
