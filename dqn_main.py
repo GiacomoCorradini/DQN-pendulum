@@ -19,6 +19,7 @@ def render_greedy_policy(env, agent, exploration_prob, x0=None, maxiter=100):
     gamma_i  = 1
     X_sim    = np.zeros([maxiter,env.pendulum.nx])   # store x
     U_sim    = np.zeros(maxiter)                     # store u
+    Cost_sim = np.zeros(maxiter)                     # store u
     for i in range(maxiter):
         u = agent.get_action(exploration_prob, env, x, False)
         if(env.njoint == 2):
@@ -27,12 +28,13 @@ def render_greedy_policy(env, agent, exploration_prob, x0=None, maxiter=100):
         costToGo += gamma_i*c
         gamma_i  *= agent.DISCOUNT
         #env.render()
-        X_sim[i,:] = np.concatenate(np.array([x]).T)
-        U_sim[i]   = env.d2cu(u)
+        X_sim[i,:]  = np.concatenate(np.array([x]).T)
+        U_sim[i]    = env.d2cu(u)
+        Cost_sim[i] = c
     print("Real cost to go of state", x0, ":", costToGo)
-    return X_sim, U_sim
+    return X_sim, U_sim, Cost_sim
 
-def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
+def compute_V_pi_from_Q(d2cu, agent, vMax=5, xstep=20, nx=2):
     ''' Compute Value table and greedy policy pi from Q table. '''
 
     x      = np.empty(shape = (nx,xstep+1))
@@ -42,23 +44,13 @@ def compute_V_pi_from_Q(agent, vMax=5, xstep=20, nx=2):
     x[1,:] = np.arange(-vMax,vMax+DV, DV)
 
     pi     = np.empty(shape = (xstep+1,xstep+1))
-    # pi2    = np.empty(shape = (xstep+1,xstep+1))
     V      = np.empty(shape = (xstep+1,xstep+1))
-    # Q      = np.empty(shape = (xstep+1,xstep+1,agent.ndu))
 
     for i in range(np.shape(x)[1]):
         for j in range(np.shape(x)[1]):
             xu = np.reshape([x[0,i]*np.ones(agent.ndu),x[1,j]*np.ones(agent.ndu),np.arange(agent.ndu)],(nx+1,agent.ndu))
             V[i,j]   = np.min(agent.Q(xu.T))
-            pi[i,j]  = np.argmin(agent.Q(xu.T))
-            # Q[i,j,:] = agent.tf2np(agent.Q(xu))
-            # u_best   = np.where(Q[i,j,:]==V[i,j])[0]
-            # if(u_best[0]>env.c2du(0.0)):
-            #     pi2[i,j] = u_best[-1]
-            # elif(u_best[-1]<env.c2du(0.0)):
-            #     pi2[i,j] = u_best[0]
-            # else:
-            #     pi2[i,j] = u_best[int(u_best.shape[0]/2)]
+            pi[i,j]  = d2cu(np.argmin(agent.Q(xu.T)))
     return V, pi, x
 
 
@@ -116,8 +108,6 @@ def dqn_learning(buffer, agent, env,\
         
             # store the experience (s,a,r,s',a') in the replay_buffer
             buffer.store_experience(x, u, cost, x_next, u_next)
-            X_sim[k,:] = x
-            U_sim[k] = env.d2cu(u)
 
             if buffer.get_length() > 0 and k % c_step == 0:
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
@@ -151,42 +141,42 @@ def dqn_learning(buffer, agent, env,\
         # use the function compute_V_pi_from_Q(env, Q) to compute and plot V and pi
         if(i%nprint==0 and i>=nprint):
             print("DQN - Episode %d, J=%.1f, eps=%.1f"%(i,J,100*exploration_prob))
-     
-            # if(plot):
-            #     if(env.njoint == 1):
-            #         V, pi, xgrid = compute_V_pi_from_Q(agent)
-            #         env.plot_V_table(V, xgrid, iaux)
-            #         env.plot_policy(pi, xgrid, iaux)
-            #     # env.plot_policy(pi2, xgrid, iaux)
-            #     time_vec = np.linspace(0.0,MAX_EPISODE_LENGTH*env.pendulum.DT,MAX_EPISODE_LENGTH)
-            #     plt.figure()
-            #     plt.plot(time_vec, U_sim[:], "b")
-            #     if env.uMax:
-            #         plt.plot(time_vec, env.uMax*np.ones(len(time_vec)), "k--", alpha=0.8, linewidth=1.5)
-            #         plt.plot(time_vec, -env.uMax*np.ones(len(time_vec)), "k--", alpha=0.8, linewidth=1.5)
-            #     plt.gca().set_xlabel('Time [s]')
-            #     plt.gca().set_ylabel('[Nm]')
-            #     plt.title ("Torque input")
+
+            X_sim, U_sim, _ = render_greedy_policy(env, agent, exploration_prob)
+            if(plot):
+                # if(env.njoint == 1):
+                #     V, pi, xgrid = compute_V_pi_from_Q(env.d2cu,agent)
+                #     env.plot_V_table(V, xgrid)
+                #     env.plot_policy(pi, xgrid)
+                time_vec = np.linspace(0.0,MAX_EPISODE_LENGTH*env.pendulum.DT,MAX_EPISODE_LENGTH)
+                plt.figure()
+                plt.plot(time_vec, U_sim[:], "b")
+                if env.uMax:
+                    plt.plot(time_vec, env.uMax*np.ones(len(time_vec)), "k--", alpha=0.8, linewidth=1.5)
+                    plt.plot(time_vec, -env.uMax*np.ones(len(time_vec)), "k--", alpha=0.8, linewidth=1.5)
+                plt.gca().set_xlabel('Time [s]')
+                plt.gca().set_ylabel('[Nm]')
+                plt.title ("Torque input")
             
-            #     plt.figure()
-            #     plt.plot(time_vec, X_sim[:,0],'b')
-            #     if env.njoint == 2:
-            #         plt.plot(time_vec, X_sim[:,1],'r')
-            #         plt.legend(["1st joint position","2nd joint position"],loc='upper right')
-            #     plt.gca().set_xlabel('Time [s]')
-            #     plt.gca().set_ylabel('[rad]')
-            #     plt.title ("Joint position")
+                plt.figure()
+                plt.plot(time_vec, X_sim[:,0],'b')
+                if env.njoint == 2:
+                    plt.plot(time_vec, X_sim[:,1],'r')
+                    plt.legend(["1st joint position","2nd joint position"],loc='upper right')
+                plt.gca().set_xlabel('Time [s]')
+                plt.gca().set_ylabel('[rad]')
+                plt.title ("Joint position")
                 
-            #     plt.figure()
-            #     if env.njoint == 1:
-            #         plt.plot(time_vec, X_sim[:,1],'b')
-            #     else:
-            #         plt.plot(time_vec, X_sim[:,2],'b')
-            #         plt.plot(time_vec, X_sim[:,3],'r')
-            #         plt.legend(["1st joint velocity","2nd joint velocity"],loc='upper right')
-            #     plt.gca().set_xlabel('Time [s]')
-            #     plt.gca().set_ylabel('[rad/s]')
-            #     plt.title ("Joint velocity")
+                plt.figure()
+                if env.njoint == 1:
+                    plt.plot(time_vec, X_sim[:,1],'b')
+                else:
+                    plt.plot(time_vec, X_sim[:,2],'b')
+                    plt.plot(time_vec, X_sim[:,3],'r')
+                    plt.legend(["1st joint velocity","2nd joint velocity"],loc='upper right')
+                plt.gca().set_xlabel('Time [s]')
+                plt.gca().set_ylabel('[rad/s]')
+                plt.title ("Joint velocity")
 
     return h_ctg
 
@@ -258,13 +248,12 @@ if __name__=="__main__":
         assert(agent.Q)
     
     if (njoint == 1): #plot V, pi for joint 1
-        V, pi, xgrid = compute_V_pi_from_Q(agent)
+        V, pi, xgrid = compute_V_pi_from_Q(env.d2cu,agent)
         env.plot_V_table(V, xgrid)
         env.plot_policy(pi, xgrid)
-        # env.plot_policy(pi2, xgrid)
         print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
         
-    X_sim, U_sim = render_greedy_policy(env, agent, EXPLORATION_PROB, None, MAX_EPISODE_LENGTH)
+    X_sim, U_sim, Cost_sim = render_greedy_policy(env, agent, EXPLORATION_PROB, None, MAX_EPISODE_LENGTH)
 
     if PLOT_TRAJ:
         time_vec = np.linspace(0.0,MAX_EPISODE_LENGTH*env.pendulum.DT,MAX_EPISODE_LENGTH)
@@ -276,6 +265,12 @@ if __name__=="__main__":
         plt.gca().set_xlabel('Time [s]')
         plt.gca().set_ylabel('[Nm]')
         plt.title ("Torque input")
+
+        plt.figure()
+        plt.plot(time_vec, Cost_sim[:], "b")
+        plt.gca().set_xlabel('Time [s]')
+        plt.gca().set_ylabel('Cost')
+        plt.title ("Cost")
     
         plt.figure()
         plt.plot(time_vec, X_sim[:,0],'b')
