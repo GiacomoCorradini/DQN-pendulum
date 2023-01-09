@@ -102,7 +102,7 @@ def dqn_learning(buffer, agent, env,\
 
             # observe cost and next state (step = calculate dynamics)
             if (env.njoint == 2):
-                x_next, cost = env.step([u,env.c2du(0)])
+                x_next, cost = env.step([u,env.c2du(0.0)])
             else: x_next, cost = env.step([u])
 
             # next control greedy
@@ -136,7 +136,8 @@ def dqn_learning(buffer, agent, env,\
         # update the exploration probability with an exponential decay: 
         exploration_prob = max(np.exp(-exploration_decreasing_decay*i), min_exploration_prob)
         elapsed_time = round((time.time() - start),3)
-        print("Episode", i, "completed in", elapsed_time, "s - eps =", round(100*exploration_prob,2), "- J =", round(J,2))
+
+        print("Episode", i, "completed in", elapsed_time, "s - eps =", round(100*exploration_prob,2), "- cost-to-go (J) =", round(J,2))
         
         # use the function compute_V_pi_from_Q(env, Q) to compute and plot V and pi
         if(i%nprint==0 and i>=nprint):
