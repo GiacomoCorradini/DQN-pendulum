@@ -12,7 +12,7 @@ from replay_buffer import ReplayBuffer
 from tensorflow.python.ops.numpy_ops import np_config
 np_config.enable_numpy_behavior()
 
-def render_greedy_policy(env, agent, exploration_prob, x0=None, maxiter=100):
+def render_greedy_policy(env, agent, exploration_prob, control_map, x0=None, maxiter=100):
     '''Roll-out from random state using greedy policy.'''
     x0 = x = env.reset(x0)
     costToGo = 0.0
@@ -20,13 +20,13 @@ def render_greedy_policy(env, agent, exploration_prob, x0=None, maxiter=100):
     X_sim    = np.zeros([maxiter,env.pendulum.nx])   # store x
     U_sim    = np.zeros(maxiter)                     # store u
     for i in range(maxiter):
-        u = agent.get_action(exploration_prob, env, x, False)
+        u = agent.get_action(exploration_prob, x, False, control_map)
         if(env.njoint == 2):
             x,c      = env.step([u,env.c2du(0)])
         else:    x,c      = env.step([u])
         costToGo += gamma_i*c
         gamma_i  *= agent.DISCOUNT
-        #env.render()
+        env.render()
         X_sim[i,:] = np.concatenate(np.array([x]).T)
         U_sim[i] = env.d2cu(u)
     print("Real cost to go of state", x0, ":", costToGo)
@@ -95,7 +95,6 @@ def dqn_learning(buffer, agent, env, control_map,\
     #Q = tf.keras.models.clone_model(agent.Q)
 
     # count the n° of episodes
-    ep = 0
     X_sim    = np.zeros([maxEpisodeLength,env.pendulum.nx])   # store x
     U_sim    = np.zeros(maxEpisodeLength)                     # store u
     # for every episode
@@ -104,7 +103,6 @@ def dqn_learning(buffer, agent, env, control_map,\
         env.reset()
         # set usefull variable
         J = 0
-        ep += 1
         gamma_to_the_i = 1
         # simulate the system for maxEpisodeLength steps
         for k in range(maxEpisodeLength):
@@ -150,8 +148,7 @@ def dqn_learning(buffer, agent, env, control_map,\
             J += gamma_to_the_i * cost
             gamma_to_the_i *= gamma
         
-        J_avg = J / ep
-        h_ctg.append(J_avg)
+        h_ctg.append(J)
 
         # update the exploration probability with an exponential decay: 
         exploration_prob = max(np.exp(-exploration_decreasing_decay*i), min_exploration_prob)
@@ -211,7 +208,7 @@ if __name__=="__main__":
     np.random.seed(RANDOM_SEED)
 
     ### --- Hyper paramaters
-    NEPISODES                    = 500      # Number of training episodes
+    NEPISODES                    = 50      # Number of training episodes
     NPRINT               = NEPISODES/5       # print something every NPRINT episodes
     MAX_EPISODE_LENGTH           = 100       # Max episode length
     QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
@@ -265,14 +262,14 @@ if __name__=="__main__":
         agent.Q = tf.keras.models.load_model('saved_model/my_model')
         assert(agent.Q)
     
-    if (njoint == 1): #plot V, pi for joint 1
+    if (njoint == 2): #plot V, pi for joint 1
         V, pi, xgrid = compute_V_pi_from_Q(agent)
         env.plot_V_table(V, xgrid)
         env.plot_policy(pi, xgrid)
         # env.plot_policy(pi2, xgrid)
         print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
         
-    X_sim, U_sim = render_greedy_policy(env, agent, EXPLORATION_PROB, None, MAX_EPISODE_LENGTH)
+    X_sim, U_sim = render_greedy_policy(env, agent, EXPLORATION_PROB, control_map, None, MAX_EPISODE_LENGTH)
 
     if PLOT_TRAJ:
         time_vec = np.linspace(0.0,MAX_EPISODE_LENGTH*env.pendulum.DT,MAX_EPISODE_LENGTH)

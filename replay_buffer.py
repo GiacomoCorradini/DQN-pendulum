@@ -26,9 +26,11 @@ class ReplayBuffer:
         """
         batch = random.choices(self.replay_buffer, k=self.batch_size)
         x_batch, u_batch, cost_batch, x_next_batch= list(zip(*batch))
-        
+        print(type(u_batch))
         x_batch       = np.concatenate([x_batch], axis=1).T
         u_batch       = np.asarray(u_batch)
+        print(type(u_batch))
+
         cost_batch    = np.asarray(cost_batch)
         x_next_batch  = np.concatenate([x_next_batch], axis=1).T
 
