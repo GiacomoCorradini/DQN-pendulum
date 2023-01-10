@@ -143,10 +143,6 @@ def dqn_learning(buffer, agent, env,\
         if(i%nprint==0 and i>=nprint):
             X_sim, U_sim, Cost_sim = render_greedy_policy(env, agent, 0, None, maxEpisodeLength)
             if(plot):
-                # if(env.njoint == 1):
-                #     V, pi, xgrid = compute_V_pi_from_Q(env.d2cu,agent)
-                #     env.plot_V_table(V, xgrid)
-                #     env.plot_policy(pi, xgrid)
                 time_vec = np.linspace(0.0,maxEpisodeLength*env.pendulum.DT,maxEpisodeLength)
                 plot_traj(time_vec, X_sim, U_sim, Cost_sim, env)
                 plt.show()
@@ -160,7 +156,7 @@ if __name__=="__main__":
     np.random.seed(RANDOM_SEED)
 
     ### --- Hyper paramaters
-    NEPISODES                    = 500       # Number of training episodes
+    NEPISODES                    = 100       # Number of training episodes
     NPRINT               = NEPISODES/5       # print something every NPRINT episodes
     MAX_EPISODE_LENGTH           = 100       # Max episode length
     QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
@@ -168,7 +164,7 @@ if __name__=="__main__":
     PLOT                         = True      # Plot stuff if True
     PLOT_TRAJ                    = True      # Plot trajectory if True
     EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
-    EXPLORATION_DECREASING_DECAY = -np.log(5e-3)/NEPISODES     # exploration decay for exponential decreasing
+    EXPLORATION_DECREASING_DECAY = 0.05      # exploration decay for exponential decreasing
     MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration probability
     CAPACITY_BUFFER              = 500       # capacity buffer
     BATCH_SIZE                   = 32        # batch size 
@@ -187,8 +183,7 @@ if __name__=="__main__":
     env = Pendulum_dci(njoint, nd_u)
 
     agent = DQNagent(nx, nu, env, DISCOUNT, QVALUE_LEARNING_RATE)
-    # agent.Q.summary()
-    # agent.Q_target.summary()
+    agent.Q.summary()
 
     buffer = ReplayBuffer(CAPACITY_BUFFER, BATCH_SIZE)
 
@@ -201,7 +196,7 @@ if __name__=="__main__":
         print("\nTraining finished")
         print("\nSave NN weights to file (in HDF5)")
         if (njoint == 1):
-            agent.Q.save('saved_model/my_model1')
+            agent.Q.save('saved_model/my_model')
             agent.Q.save_weights('saved_model/weight1.h5')
         else:    
             agent.Q.save('saved_model/my_model2')
@@ -214,7 +209,7 @@ if __name__=="__main__":
 
     if FLAG == False: #load model
         if (njoint == 1):
-            agent.Q = tf.keras.models.load_model('saved_model/my_model1')
+            agent.Q = tf.keras.models.load_model('saved_model/my_model')
         else:
             agent.Q = tf.keras.models.load_model('saved_model/my_model2')
         assert(agent.Q)

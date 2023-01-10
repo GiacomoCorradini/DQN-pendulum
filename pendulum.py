@@ -167,18 +167,14 @@ class Pendulum:
 
             q    += (v+0.5*DT*a)*DT
             v    += a*DT
-            cost += (4*sumsq(q) + 1e-1*sumsq(v) + 1e-3*sumsq(u))*DT # cost function
+            cost += (3*sumsq(q) + 1e-1*sumsq(v) + 1e-3*sumsq(u))*DT # cost function
 
             if display:
                 self.display(q)
                 time.sleep(1e-4)
-       # cost += (sumsq(q) + 1e-1*sumsq(v) + 1e-3*sumsq(u)) # cost function     
-
+        
         x[:self.nq] = modulePi(q)
         x[self.nq:] = np.clip(v,-self.vmax,self.vmax) 
-
-        # if (sumsq(q)<1e-3):
-        #     cost -= 10
         return x,cost
      
     def render(self):
