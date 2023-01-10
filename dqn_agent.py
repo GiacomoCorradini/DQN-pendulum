@@ -61,7 +61,10 @@ class DQNagent:
         else:
             x  = np.array([x]).T
             xu = np.reshape([np.append([x]*np.ones(env.ndu),[np.arange(env.ndu)])],(env.pendulum.nx+1,env.ndu))
-            u  = np.argmin((self.Q(xu.T)))
+            if(EGREEDY == False):
+                u  = np.argmin((self.Q_target(xu.T)))
+            else: 
+                u  = np.argmin((self.Q(xu.T)))
         return u
 
     def update(self, xu_batch, cost_batch, xu_next_batch):

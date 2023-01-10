@@ -22,7 +22,7 @@ def render_greedy_policy(env, agent, exploration_prob, x0=None, maxiter=100):
     U_sim    = np.zeros(maxiter)                     # store u
     Cost_sim = np.zeros(maxiter)                     # store u
     for i in range(maxiter):
-        u = agent.get_action(exploration_prob, env, x, False)
+        u = agent.get_action(0, env, x, True)
         if(env.njoint == 2):
             x,c      = env.step([u,env.c2du(0)])
         else:    x,c      = env.step([u])
@@ -80,7 +80,7 @@ def dqn_learning(buffer, agent, env,\
     h_ctg    = []
     X_sim    = np.zeros([maxEpisodeLength,env.pendulum.nx])
     U_sim    = np.zeros(maxEpisodeLength)
-    Cost_sim    = np.zeros(maxEpisodeLength)
+    Cost_sim = np.zeros(maxEpisodeLength)
     
     # for every episode
     for i in range(nEpisodes):
@@ -106,17 +106,14 @@ def dqn_learning(buffer, agent, env,\
             if (env.njoint == 2):
                 x_next, cost = env.step([u,env.c2du(0.0)])
             else: x_next, cost = env.step([u])
-
-            # next control greedy
-            u_next = agent.get_action(exploration_prob, env, x_next, False)
         
             # store the experience (s,a,r,s',a') in the replay_buffer
-            buffer.store_experience(x, u, cost, x_next, u_next)
+            buffer.store_experience(x, u, cost, x_next)
 
-            if buffer.get_length() > 0 and k % c_step == 0:
+            if buffer.get_length() > min_buffer:
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
                 # collect together state and control
-                xu_batch, xu_next_batch, cost_batch = buffer.sample_batch(env)
+                xu_batch, xu_next_batch, cost_batch = buffer.sample_batch(env, exploration_prob, agent)
 
                 # convert numpy to tensorflow
                 xu_batch      = agent.np2tf(xu_batch)
@@ -127,7 +124,8 @@ def dqn_learning(buffer, agent, env,\
                 agent.update(xu_batch, cost_batch, xu_next_batch)
                 
                 # Periodically update target network (period = c_step)
-                agent.update_Q_target()   
+                if k % c_step == 0:
+                    agent.update_Q_target()   
         
             # keep track of the cost to go
             J += gamma_to_the_i * cost
@@ -143,7 +141,7 @@ def dqn_learning(buffer, agent, env,\
         
         # use the function compute_V_pi_from_Q(env, Q) to compute and plot V and pi
         if(i%nprint==0 and i>=nprint):
-            X_sim, U_sim, Cost_sim = render_greedy_policy(env, agent, exploration_prob, None, maxEpisodeLength)
+            X_sim, U_sim, Cost_sim = render_greedy_policy(env, agent, 0, None, maxEpisodeLength)
             if(plot):
                 # if(env.njoint == 1):
                 #     V, pi, xgrid = compute_V_pi_from_Q(env.d2cu,agent)
@@ -151,6 +149,7 @@ def dqn_learning(buffer, agent, env,\
                 #     env.plot_policy(pi, xgrid)
                 time_vec = np.linspace(0.0,maxEpisodeLength*env.pendulum.DT,maxEpisodeLength)
                 plot_traj(time_vec, X_sim, U_sim, Cost_sim, env)
+                plt.show()
 
     return h_ctg
 
@@ -169,9 +168,9 @@ if __name__=="__main__":
     PLOT                         = True      # Plot stuff if True
     PLOT_TRAJ                    = True      # Plot trajectory if True
     EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
-    EXPLORATION_DECREASING_DECAY = -np.log(1e-3)/NEPISODES     # exploration decay for exponential decreasing
+    EXPLORATION_DECREASING_DECAY = -np.log(5e-3)/NEPISODES     # exploration decay for exponential decreasing
     MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration probability
-    CAPACITY_BUFFER              = 2000      # capacity buffer
+    CAPACITY_BUFFER              = 500       # capacity buffer
     BATCH_SIZE                   = 32        # batch size 
     MIN_BUFFER                   = 100       # Start sampling from buffer when have length > MIN_BUFFER
     C_STEP                       = 4         # Every c step update w  
@@ -188,8 +187,8 @@ if __name__=="__main__":
     env = Pendulum_dci(njoint, nd_u)
 
     agent = DQNagent(nx, nu, env, DISCOUNT, QVALUE_LEARNING_RATE)
-    agent.Q.summary()
-    agent.Q_target.summary()
+    # agent.Q.summary()
+    # agent.Q_target.summary()
 
     buffer = ReplayBuffer(CAPACITY_BUFFER, BATCH_SIZE)
 

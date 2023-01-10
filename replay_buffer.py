@@ -12,26 +12,28 @@ class ReplayBuffer:
         self.capacity_buffer = capacity_buffer_
         self.batch_size = batch_size_
 
-    def store_experience(self, state, control, cost, next_state, control_next):
+    def store_experience(self, state, control, cost, next_state):
         """
         Records an experience and if necessary resize the 
         length of the buffer to capacity_buffer
         """
-        experience = [state, control, cost, next_state, control_next]
+        experience = [state, control, cost, next_state]
         self.replay_buffer.append(experience)
 
-    def sample_batch(self, env):
+    def sample_batch(self, env, exploration_prob, agent):
         """
         Sample a batch of experince (size = batch_size) for training
         """
         batch = random.choices(self.replay_buffer, k=self.batch_size)
-        x_batch, u_batch, cost_batch, x_next_batch, u_next_batch = list(zip(*batch))
+        x_batch, u_batch, cost_batch, x_next_batch = list(zip(*batch))
+        u_next_batch = np.empty(self.batch_size)
         
         x_batch       = np.concatenate([x_batch], axis=1).T
         u_batch       = np.asarray(u_batch)
         cost_batch    = np.asarray(cost_batch)
+        for i in range(self.batch_size):
+            u_next_batch[i] = agent.get_action(exploration_prob, env, x_next_batch[i], False)
         x_next_batch  = np.concatenate([x_next_batch], axis=1).T
-        u_next_batch  = np.asarray(u_next_batch)
 
         xu_batch      = np.reshape(np.append(x_batch, u_batch), (env.pendulum.nx + 1,self.batch_size))
         xu_next_batch = np.reshape(np.append(x_next_batch, u_next_batch),(env.pendulum.nx + 1,self.batch_size))

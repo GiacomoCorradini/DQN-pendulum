@@ -202,7 +202,7 @@ if __name__=="__main__":
     V = []
     U = []
     for i in range(100):
-        u[0] += 0.0
+        u[0] += 0.01
         if env.nu > 1:
             for i in range(env.nu - 1):
                 u[i+1] = 0.0
