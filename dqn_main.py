@@ -22,7 +22,7 @@ def render_greedy_policy(env, agent, exploration_prob, x0=None, maxiter=100):
     U_sim    = np.zeros(maxiter)                     # store u
     Cost_sim = np.zeros(maxiter)                     # store u
     for i in range(maxiter):
-        u = agent.get_action(exploration_prob, env, x, False)
+        u = agent.get_action(0, env, x, True)
         if(env.njoint == 2):
             x,c      = env.step([u,env.c2du(0)])
         else:    x,c      = env.step([u])
@@ -35,9 +35,11 @@ def render_greedy_policy(env, agent, exploration_prob, x0=None, maxiter=100):
     print("Real cost to go of state", x0, ":", costToGo)
     return X_sim, U_sim, Cost_sim
 
-def compute_V_pi_from_Q(d2cu, agent, vMax=5, xstep=20, nx=2):
+def compute_V_pi_from_Q(d2cu, agent, env, xstep=20):
     ''' Compute Value table and greedy policy pi from Q table. '''
 
+    vMax   = env.vMax  
+    nx     = env.pendulum.nx
     x      = np.empty(shape = (nx,xstep+1))
     DQ     = 2*np.pi/xstep
     DV     = 2*vMax/xstep
@@ -78,7 +80,7 @@ def dqn_learning(buffer, agent, env,\
     h_ctg    = []
     X_sim    = np.zeros([maxEpisodeLength,env.pendulum.nx])
     U_sim    = np.zeros(maxEpisodeLength)
-    Cost_sim    = np.zeros(maxEpisodeLength)
+    Cost_sim = np.zeros(maxEpisodeLength)
     
     # for every episode
     for i in range(nEpisodes):
@@ -102,19 +104,16 @@ def dqn_learning(buffer, agent, env,\
 
             # observe cost and next state (step = calculate dynamics)
             if (env.njoint == 2):
-                x_next, cost = env.step([u,env.c2du(0)])
+                x_next, cost = env.step([u,env.c2du(0.0)])
             else: x_next, cost = env.step([u])
-
-            # next control greedy
-            u_next = agent.get_action(exploration_prob, env, x_next, False)
         
             # store the experience (s,a,r,s',a') in the replay_buffer
-            buffer.store_experience(x, u, cost, x_next, u_next)
+            buffer.store_experience(x, u, cost, x_next)
 
-            if buffer.get_length() > 0 and k % c_step == 0:
+            if buffer.get_length() > min_buffer:
                 # Randomly sample minibatch (size of batch_size) of experience from replay_buffer
                 # collect together state and control
-                xu_batch, xu_next_batch, cost_batch = buffer.sample_batch(env)
+                xu_batch, xu_next_batch, cost_batch = buffer.sample_batch(env, exploration_prob, agent)
 
                 # convert numpy to tensorflow
                 xu_batch      = agent.np2tf(xu_batch)
@@ -125,7 +124,8 @@ def dqn_learning(buffer, agent, env,\
                 agent.update(xu_batch, cost_batch, xu_next_batch)
                 
                 # Periodically update target network (period = c_step)
-                agent.update_Q_target()   
+                if k % c_step == 0:
+                    agent.update_Q_target()   
         
             # keep track of the cost to go
             J += gamma_to_the_i * cost
@@ -136,18 +136,16 @@ def dqn_learning(buffer, agent, env,\
         # update the exploration probability with an exponential decay: 
         exploration_prob = max(np.exp(-exploration_decreasing_decay*i), min_exploration_prob)
         elapsed_time = round((time.time() - start),3)
-        print("Episode", i, "completed in", elapsed_time, "s - eps =", round(100*exploration_prob,2), "- J =", round(J,2))
+
+        print("Episode", i, "completed in", elapsed_time, "s - eps =", round(100*exploration_prob,2), "- cost-to-go (J) =", round(J,2))
         
         # use the function compute_V_pi_from_Q(env, Q) to compute and plot V and pi
         if(i%nprint==0 and i>=nprint):
-            X_sim, U_sim, Cost_sim = render_greedy_policy(env, agent, exploration_prob)
+            X_sim, U_sim, Cost_sim = render_greedy_policy(env, agent, 0, None, maxEpisodeLength)
             if(plot):
-                # if(env.njoint == 1):
-                #     V, pi, xgrid = compute_V_pi_from_Q(env.d2cu,agent)
-                #     env.plot_V_table(V, xgrid)
-                #     env.plot_policy(pi, xgrid)
                 time_vec = np.linspace(0.0,maxEpisodeLength*env.pendulum.DT,maxEpisodeLength)
                 plot_traj(time_vec, X_sim, U_sim, Cost_sim, env)
+                plt.show()
 
     return h_ctg
 
@@ -158,7 +156,7 @@ if __name__=="__main__":
     np.random.seed(RANDOM_SEED)
 
     ### --- Hyper paramaters
-    NEPISODES                    = 500       # Number of training episodes
+    NEPISODES                    = 100       # Number of training episodes
     NPRINT               = NEPISODES/5       # print something every NPRINT episodes
     MAX_EPISODE_LENGTH           = 100       # Max episode length
     QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
@@ -167,8 +165,8 @@ if __name__=="__main__":
     PLOT_TRAJ                    = True      # Plot trajectory if True
     EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
     EXPLORATION_DECREASING_DECAY = 0.05      # exploration decay for exponential decreasing
-    MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration proba
-    CAPACITY_BUFFER              = 1000      # capacity buffer
+    MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration probability
+    CAPACITY_BUFFER              = 500       # capacity buffer
     BATCH_SIZE                   = 32        # batch size 
     MIN_BUFFER                   = 100       # Start sampling from buffer when have length > MIN_BUFFER
     C_STEP                       = 4         # Every c step update w  
@@ -186,7 +184,6 @@ if __name__=="__main__":
 
     agent = DQNagent(nx, nu, env, DISCOUNT, QVALUE_LEARNING_RATE)
     agent.Q.summary()
-    agent.Q_target.summary()
 
     buffer = ReplayBuffer(CAPACITY_BUFFER, BATCH_SIZE)
 
@@ -199,7 +196,7 @@ if __name__=="__main__":
         print("\nTraining finished")
         print("\nSave NN weights to file (in HDF5)")
         if (njoint == 1):
-            agent.Q.save('saved_model/my_model1')
+            agent.Q.save('saved_model/my_model')
             agent.Q.save_weights('saved_model/weight1.h5')
         else:    
             agent.Q.save('saved_model/my_model2')
@@ -212,13 +209,13 @@ if __name__=="__main__":
 
     if FLAG == False: #load model
         if (njoint == 1):
-            agent.Q = tf.keras.models.load_model('saved_model/my_model1')
+            agent.Q = tf.keras.models.load_model('saved_model/my_model')
         else:
             agent.Q = tf.keras.models.load_model('saved_model/my_model2')
         assert(agent.Q)
     
     if (njoint == 1): #plot V, pi for joint 1
-        V, pi, xgrid = compute_V_pi_from_Q(env.d2cu,agent)
+        V, pi, xgrid = compute_V_pi_from_Q(env.d2cu,agent, env)
         env.plot_V_table(V, xgrid)
         env.plot_policy(pi, xgrid)
         print("Average/min/max Value:", np.mean(V), np.min(V), np.max(V)) 
