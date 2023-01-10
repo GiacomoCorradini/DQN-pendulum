@@ -167,16 +167,18 @@ class Pendulum:
 
             q    += (v+0.5*DT*a)*DT
             v    += a*DT
-            cost += (sumsq(q) + 1e-1*sumsq(v) + 1e-3*sumsq(u))*DT # cost function
+            cost += (4*sumsq(q) + 1e-1*sumsq(v) + 1e-3*sumsq(u))*DT # cost function
 
             if display:
                 self.display(q)
                 time.sleep(1e-4)
+       # cost += (sumsq(q) + 1e-1*sumsq(v) + 1e-3*sumsq(u)) # cost function     
 
         x[:self.nq] = modulePi(q)
         x[self.nq:] = np.clip(v,-self.vmax,self.vmax) 
 
-            cost -= 5
+        # if (sumsq(q)<1e-3):
+        #     cost -= 10
         return x,cost
      
     def render(self):
@@ -193,7 +195,7 @@ if __name__=="__main__":
 
     env = Pendulum(2) 
 
-    x0 = x = env.reset(np.zeros(env.nx))
+    x0 = x = env.reset(np.array([0.0,0.0,0.0,0.0]))
     u = np.zeros(env.nu)
     cost = []
     X = []
@@ -203,7 +205,7 @@ if __name__=="__main__":
         u[0] += 0.0
         if env.nu > 1:
             for i in range(env.nu - 1):
-                u[i+1] = 0.01
+                u[i+1] = 0.0
             U.append([u[k] for k in range(env.nu)])
         else:
             U.append(u[0])  
@@ -211,7 +213,7 @@ if __name__=="__main__":
         X.append(x[:env.nq])
         V.append(x[env.nq:])
         cost.append(c)
-        env.render()
+        #env.render()
     
     plt.figure()
     plt.plot( np.cumsum(cost)/range(1,100+1) )

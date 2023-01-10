@@ -161,17 +161,17 @@ if __name__=="__main__":
     np.random.seed(RANDOM_SEED)
 
     ### --- Hyper paramaters
-    NEPISODES                    = 1500       # Number of training episodes
+    NEPISODES                    = 500       # Number of training episodes
     NPRINT               = NEPISODES/5       # print something every NPRINT episodes
     MAX_EPISODE_LENGTH           = 100       # Max episode length
     QVALUE_LEARNING_RATE         = 1e-3      # alpha coefficient of Q learning algorithm
-    DISCOUNT                     = 0.99       # Discount factor 
+    DISCOUNT                     = 0.99      # Discount factor 
     PLOT                         = True      # Plot stuff if True
     PLOT_TRAJ                    = True      # Plot trajectory if True
     EXPLORATION_PROB             = 1         # initial exploration probability of eps-greedy policy
-    EXPLORATION_DECREASING_DECAY = -np.log(1e-5)/NEPISODES     # exploration decay for exponential decreasing
+    EXPLORATION_DECREASING_DECAY = -np.log(1e-3)/NEPISODES     # exploration decay for exponential decreasing
     MIN_EXPLORATION_PROB         = 0.001     # minimum of exploration probability
-    CAPACITY_BUFFER              = 1000      # capacity buffer
+    CAPACITY_BUFFER              = 2000      # capacity buffer
     BATCH_SIZE                   = 32        # batch size 
     MIN_BUFFER                   = 100       # Start sampling from buffer when have length > MIN_BUFFER
     C_STEP                       = 4         # Every c step update w  
